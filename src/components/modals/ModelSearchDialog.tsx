@@ -405,6 +405,22 @@ export function ModelSearchDialog({
     }
   };
 
+  // Compute which providers are available based on API keys
+  const availableProviders = useMemo(() => {
+    const providers = new Set<ProviderType>(["gemini", "fal"]); // Always available
+    if (replicateApiKey) providers.add("replicate");
+    if (kieApiKey) providers.add("kie");
+    if (wavespeedApiKey) providers.add("wavespeed");
+    return providers;
+  }, [replicateApiKey, kieApiKey, wavespeedApiKey]);
+
+  // Reset provider filter if current selection becomes unavailable
+  useEffect(() => {
+    if (providerFilter !== "all" && !availableProviders.has(providerFilter as ProviderType)) {
+      setProviderFilter("all");
+    }
+  }, [providerFilter, availableProviders]);
+
   // Filter recent models by capability
   const filteredRecentModels = useMemo(() => {
     return recentModels
@@ -585,7 +601,7 @@ export function ModelSearchDialog({
               />
             </div>
 
-            {/* Provider Filter - Icon Buttons */}
+            {/* Provider Filter - Icon Buttons (only show available providers) */}
             <div className="flex items-center gap-0.5 bg-neutral-700/50 rounded p-0.5">
               <button
                 onClick={() => setProviderFilter("all")}
@@ -598,61 +614,71 @@ export function ModelSearchDialog({
               >
                 All
               </button>
-              <button
-                onClick={() => setProviderFilter("gemini")}
-                title="Gemini"
-                className={`p-2 rounded transition-colors ${
-                  providerFilter === "gemini"
-                    ? "bg-green-500/20 text-green-300"
-                    : "text-neutral-400 hover:text-green-300 hover:bg-neutral-700"
-                }`}
-              >
-                <GeminiIcon />
-              </button>
-              <button
-                onClick={() => setProviderFilter("replicate")}
-                title="Replicate"
-                className={`p-2 rounded transition-colors ${
-                  providerFilter === "replicate"
-                    ? "bg-blue-500/20 text-blue-300"
-                    : "text-neutral-400 hover:text-blue-300 hover:bg-neutral-700"
-                }`}
-              >
-                <ReplicateIcon />
-              </button>
-              <button
-                onClick={() => setProviderFilter("fal")}
-                title="fal.ai"
-                className={`p-2 rounded transition-colors ${
-                  providerFilter === "fal"
-                    ? "bg-yellow-500/20 text-yellow-300"
-                    : "text-neutral-400 hover:text-yellow-300 hover:bg-neutral-700"
-                }`}
-              >
-                <FalIcon />
-              </button>
-              <button
-                onClick={() => setProviderFilter("kie")}
-                title="Kie.ai"
-                className={`p-2 rounded transition-colors ${
-                  providerFilter === "kie"
-                    ? "bg-orange-500/20 text-orange-300"
-                    : "text-neutral-400 hover:text-orange-300 hover:bg-neutral-700"
-                }`}
-              >
-                <KieIcon />
-              </button>
-              <button
-                onClick={() => setProviderFilter("wavespeed")}
-                title="WaveSpeed"
-                className={`p-2 rounded transition-colors ${
-                  providerFilter === "wavespeed"
-                    ? "bg-orange-500/20 text-orange-300"
-                    : "text-neutral-400 hover:text-orange-300 hover:bg-neutral-700"
-                }`}
-              >
-                <WaveSpeedIcon />
-              </button>
+              {availableProviders.has("gemini") && (
+                <button
+                  onClick={() => setProviderFilter("gemini")}
+                  title="Gemini"
+                  className={`p-2 rounded transition-colors ${
+                    providerFilter === "gemini"
+                      ? "bg-green-500/20 text-green-300"
+                      : "text-neutral-400 hover:text-green-300 hover:bg-neutral-700"
+                  }`}
+                >
+                  <GeminiIcon />
+                </button>
+              )}
+              {availableProviders.has("replicate") && (
+                <button
+                  onClick={() => setProviderFilter("replicate")}
+                  title="Replicate"
+                  className={`p-2 rounded transition-colors ${
+                    providerFilter === "replicate"
+                      ? "bg-blue-500/20 text-blue-300"
+                      : "text-neutral-400 hover:text-blue-300 hover:bg-neutral-700"
+                  }`}
+                >
+                  <ReplicateIcon />
+                </button>
+              )}
+              {availableProviders.has("fal") && (
+                <button
+                  onClick={() => setProviderFilter("fal")}
+                  title="fal.ai"
+                  className={`p-2 rounded transition-colors ${
+                    providerFilter === "fal"
+                      ? "bg-yellow-500/20 text-yellow-300"
+                      : "text-neutral-400 hover:text-yellow-300 hover:bg-neutral-700"
+                  }`}
+                >
+                  <FalIcon />
+                </button>
+              )}
+              {availableProviders.has("kie") && (
+                <button
+                  onClick={() => setProviderFilter("kie")}
+                  title="Kie.ai"
+                  className={`p-2 rounded transition-colors ${
+                    providerFilter === "kie"
+                      ? "bg-orange-500/20 text-orange-300"
+                      : "text-neutral-400 hover:text-orange-300 hover:bg-neutral-700"
+                  }`}
+                >
+                  <KieIcon />
+                </button>
+              )}
+              {availableProviders.has("wavespeed") && (
+                <button
+                  onClick={() => setProviderFilter("wavespeed")}
+                  title="WaveSpeed"
+                  className={`p-2 rounded transition-colors ${
+                    providerFilter === "wavespeed"
+                      ? "bg-purple-500/20 text-purple-300"
+                      : "text-neutral-400 hover:text-purple-300 hover:bg-neutral-700"
+                  }`}
+                >
+                  <WaveSpeedIcon />
+                </button>
+              )}
             </div>
 
             {/* Capability Filter */}
