@@ -203,13 +203,8 @@ export function VideoTrimNode({ id, data, selected }: NodeProps<VideoTrimNodeTyp
     return (
       <BaseNode
         id={id}
-        title="Video Trim"
-        customTitle={nodeData.customTitle}
-        comment={nodeData.comment}
-        onCustomTitleChange={(title) => updateNodeData(id, { customTitle: title || undefined })}
-        onCommentChange={(comment) => updateNodeData(id, { comment: comment || undefined })}
         selected={selected}
-        commentNavigation={commentNavigation ?? undefined}
+        contentClassName="flex-1 min-h-0 overflow-clip"
         minWidth={360}
         minHeight={360}
       >
