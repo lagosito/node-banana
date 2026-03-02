@@ -58,6 +58,7 @@ import { NodeType, NanoBananaNodeData, HandleType } from "@/types";
 import { defaultNodeDimensions } from "@/store/utils/nodeDefaults";
 import { FloatingNodeHeader } from "./nodes/FloatingNodeHeader";
 import { ProviderBadge } from "./nodes/ProviderBadge";
+import { ControlPanel } from "./nodes/ControlPanel";
 import { detectAndSplitGrid } from "@/utils/gridSplitter";
 import { logger } from "@/utils/logger";
 import { WelcomeModal } from "./quickstart";
@@ -2080,6 +2081,9 @@ export function WorkflowCanvas() {
         workflowState={chatWorkflowState}
         selectedNodeIds={selectedNodeIds}
       />
+
+      {/* Control panel - renders on right side when a configurable node is selected */}
+      <ControlPanel />
     </div>
   );
 }
