@@ -95,6 +95,8 @@ type CapabilityFilter = "all" | "image" | "video" | "3d" | "audio";
 interface ModelsResponse {
   success: boolean;
   models?: ProviderModel[];
+  /** Providers with API keys configured (env or client header) */
+  availableProviders?: string[];
   error?: string;
 }
 
@@ -138,6 +140,7 @@ export function ModelSearchDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [serverAvailableProviders, setServerAvailableProviders] = useState<string[]>([]);
 
   // Refs
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -241,6 +244,10 @@ export function ModelSearchDialog({
         setModels(data.models);
         // Cache the successful result
         setCachedModels(cacheKey, data.models);
+        // Update server-reported available providers
+        if (data.availableProviders) {
+          setServerAvailableProviders(data.availableProviders);
+        }
       } else {
         setError(data.error || "Failed to fetch models");
         setModels([]);
@@ -405,14 +412,19 @@ export function ModelSearchDialog({
     }
   };
 
-  // Compute which providers are available based on API keys
+  // Compute which providers are available based on client API keys + server env vars
   const availableProviders = useMemo(() => {
     const providers = new Set<ProviderType>(["gemini", "fal"]); // Always available
+    // Client-side keys (from localStorage/provider settings)
     if (replicateApiKey) providers.add("replicate");
     if (kieApiKey) providers.add("kie");
     if (wavespeedApiKey) providers.add("wavespeed");
+    // Server-side keys (from env vars, reported by /api/models)
+    for (const p of serverAvailableProviders) {
+      providers.add(p as ProviderType);
+    }
     return providers;
-  }, [replicateApiKey, kieApiKey, wavespeedApiKey]);
+  }, [replicateApiKey, kieApiKey, wavespeedApiKey, serverAvailableProviders]);
 
   // Reset provider filter if current selection becomes unavailable
   useEffect(() => {
