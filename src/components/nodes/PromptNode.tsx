@@ -114,6 +114,7 @@ export function PromptNode({ id, data, selected }: NodeProps<PromptNodeType>) {
       <BaseNode
         id={id}
         selected={selected}
+        fullBleed
       >
         {/* Text input handle - for receiving text from LLM nodes */}
         <Handle
@@ -121,23 +122,22 @@ export function PromptNode({ id, data, selected }: NodeProps<PromptNodeType>) {
           position={Position.Left}
           id="text"
           data-handletype="text"
+          style={{ zIndex: 10 }}
         />
 
-        <div className="relative flex-1 flex flex-col">
-          <textarea
-            value={localPrompt}
-            onChange={handleChange}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            placeholder={hasIncomingTextConnection ? "Text from connected node (editable)..." : "Describe what to generate..."}
-            className="nodrag nopan nowheel w-full flex-1 min-h-[70px] p-2 text-xs leading-relaxed text-neutral-100 border border-neutral-700 rounded bg-neutral-900/50 resize-none focus:outline-none focus:ring-1 focus:ring-neutral-600 focus:border-neutral-600 placeholder:text-neutral-500"
-          />
-          {nodeData.variableName && (
-            <div className="mt-1 text-[10px] text-blue-400 px-2">
-              @{nodeData.variableName}
-            </div>
-          )}
-        </div>
+        <textarea
+          value={localPrompt}
+          onChange={handleChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          placeholder={hasIncomingTextConnection ? "Text from connected node (editable)..." : "Describe what to generate..."}
+          className="nodrag nopan nowheel w-full h-full p-3 text-xs leading-relaxed text-neutral-100 bg-neutral-800 rounded-lg resize-none focus:outline-none placeholder:text-neutral-500"
+        />
+        {nodeData.variableName && (
+          <div className="absolute bottom-2 left-3 z-10 text-[10px] text-blue-400 pointer-events-none">
+            @{nodeData.variableName}
+          </div>
+        )}
 
         {/* Text output handle */}
         <Handle
@@ -145,6 +145,7 @@ export function PromptNode({ id, data, selected }: NodeProps<PromptNodeType>) {
           position={Position.Right}
           id="text"
           data-handletype="text"
+          style={{ zIndex: 10 }}
         />
       </BaseNode>
 
