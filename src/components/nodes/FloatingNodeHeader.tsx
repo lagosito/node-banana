@@ -241,7 +241,7 @@ export function FloatingNodeHeader({
         </div>
 
         {/* Controls - right-aligned, fade in on hover/selected */}
-        <div className={`shrink-0 flex items-center gap-1 pr-1 transition-opacity duration-200 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`shrink-0 flex items-center gap-1 pr-1 transition-opacity duration-200 -translate-y-1 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
           {/* Lock Badge for nodes in locked groups */}
           {isInLockedGroup && (
             <div className="shrink-0 flex items-center" title="This node is in a locked group and will be skipped during execution">
