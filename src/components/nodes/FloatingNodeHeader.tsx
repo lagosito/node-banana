@@ -209,7 +209,7 @@ export function FloatingNodeHeader({
   const { setNodes, getNodes, getViewport } = useReactFlow();
   const isDraggingRef = useRef(false);
 
-  const handleHeaderMouseDown = useCallback((e: React.MouseEvent) => {
+  const handleHeaderPointerDown = useCallback((e: React.PointerEvent) => {
     // Don't drag from interactive elements
     if ((e.target as HTMLElement).closest('.nodrag, button, input, textarea, a')) return;
     if (e.button !== 0) return;
@@ -241,7 +241,7 @@ export function FloatingNodeHeader({
 
     isDraggingRef.current = false;
 
-    const handleMouseMove = (e: MouseEvent) => {
+    const handlePointerMove = (e: PointerEvent) => {
       const { zoom } = getViewport();
       const dx = (e.clientX - startX) / zoom;
       const dy = (e.clientY - startY) / zoom;
@@ -262,30 +262,32 @@ export function FloatingNodeHeader({
       }
     };
 
-    const handleMouseUp = () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+    const handlePointerUp = () => {
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
       isDraggingRef.current = false;
     };
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', handlePointerUp);
   }, [id, getNodes, getViewport, setNodes]);
 
   return (
     <div
-      className="absolute pointer-events-auto transition-opacity duration-200 cursor-grab"
+      className="absolute pointer-events-none transition-opacity duration-200"
       style={{
         left: `${position.x}px`,
         top: `${position.y - 26}px`,
         width: `${width}px`,
         zIndex: selected ? 10000 : 9000,
       }}
-      onMouseEnter={() => setIsHeaderHovered(true)}
-      onMouseLeave={() => setIsHeaderHovered(false)}
-      onMouseDown={handleHeaderMouseDown}
     >
-      <div className="px-1 py-1 flex items-center justify-between w-full">
+      <div
+        className="px-1 py-1 flex items-center justify-between w-full pointer-events-auto cursor-grab"
+        onMouseEnter={() => setIsHeaderHovered(true)}
+        onMouseLeave={() => setIsHeaderHovered(false)}
+        onPointerDown={handleHeaderPointerDown}
+      >
         {/* Title Section */}
         <div className="flex-1 min-w-0 flex items-center gap-1.5 pl-2">
           {titlePrefix}

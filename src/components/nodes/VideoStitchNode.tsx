@@ -251,7 +251,12 @@ export function VideoStitchNode({ id, data, selected }: NodeProps<VideoStitchNod
     setHoverClipId(null);
   }, [draggedClipId]);
 
-  const handlePointerUp = useCallback(() => {
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    // Always release pointer capture to prevent capture leak
+    try {
+      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch { /* element may have been removed */ }
+
     if (!draggedClipId || !hoverClipId || draggedClipId === hoverClipId) {
       setDraggedClipId(null);
       setHoverClipId(null);
