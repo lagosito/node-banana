@@ -1904,7 +1904,7 @@ export function WorkflowCanvas() {
       )}
 
       {/* Welcome Modal */}
-      {isCanvasEmpty && showQuickstart && (
+      {showQuickstart && (
         <WelcomeModal
           onWorkflowGenerated={async (workflow) => {
             await loadWorkflow(workflow);
