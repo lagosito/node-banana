@@ -57,7 +57,6 @@ import { GroupBackgroundsPortal, GroupControlsOverlay } from "./GroupsOverlay";
 import { NodeType, NanoBananaNodeData, HandleType } from "@/types";
 import { defaultNodeDimensions } from "@/store/utils/nodeDefaults";
 import { FloatingNodeHeader } from "./nodes/FloatingNodeHeader";
-import { ProviderBadge } from "./nodes/ProviderBadge";
 import { ControlPanel } from "./nodes/ControlPanel";
 import { detectAndSplitGrid } from "@/utils/gridSplitter";
 import { logger } from "@/utils/logger";
@@ -366,14 +365,6 @@ export function WorkflowCanvas() {
     return NODE_TITLES[node.type || ""] || "Node";
   }, []);
 
-  // Helper to get title prefix (provider badge for generate/LLM nodes)
-  const getNodeTitlePrefix = useCallback((node: Node): React.ReactNode => {
-    const provider = (node.data as any)?.selectedModel?.provider;
-    if (provider) {
-      return <ProviderBadge provider={provider} />;
-    }
-    return null;
-  }, []);
 
   // Wire comment/title change callbacks for FloatingNodeHeaders
   const handleCustomTitleChange = useCallback((nodeId: string, title: string) => {
@@ -384,33 +375,22 @@ export function WorkflowCanvas() {
     updateNodeData(nodeId, { comment: comment || undefined });
   }, [updateNodeData]);
 
-  // Create onRun callback for runnable nodes
-  const getOnRun = useCallback((nodeId: string, nodeType: string) => {
-    const runnableTypes = ['nanoBanana', 'generateVideo', 'generate3d', 'generateAudio', 'llmGenerate'];
-    if (runnableTypes.includes(nodeType)) {
-      return () => regenerateNode(nodeId);
-    }
-    return undefined;
+  // Stable callback for running a node from its header
+  const handleRunNode = useCallback((nodeId: string) => {
+    regenerateNode(nodeId);
   }, [regenerateNode]);
 
-  // Create onExpand callback for expandable nodes
-  const getOnExpand = useCallback((nodeId: string, nodeType: string) => {
+  // Stable callback for expanding a node from its header
+  const handleExpandNode = useCallback((nodeId: string, nodeType: string) => {
     if (nodeType === 'annotation') {
-      // Annotation uses annotationStore's openModal
-      return () => {
-        const node = getNodeById(nodeId);
-        if (!node) return;
-        const imageToEdit = (node.data as any)?.outputImage || (node.data as any)?.image;
-        if (!imageToEdit) return;
-        openAnnotationModal(nodeId, imageToEdit, (node.data as any)?.annotations);
-      };
+      const node = getNodeById(nodeId);
+      if (!node) return;
+      const imageToEdit = (node.data as any)?.outputImage || (node.data as any)?.image;
+      if (!imageToEdit) return;
+      openAnnotationModal(nodeId, imageToEdit, (node.data as any)?.annotations);
+    } else {
+      setExpandingNode({ id: nodeId, type: nodeType });
     }
-
-    const expandableTypes = ['prompt', 'promptConstructor', 'splitGrid'];
-    if (expandableTypes.includes(nodeType)) {
-      return () => setExpandingNode({ id: nodeId, type: nodeType });
-    }
-    return undefined;
   }, [getNodeById, openAnnotationModal]);
 
 
@@ -2072,18 +2052,20 @@ export function WorkflowCanvas() {
                 key={`header-${node.id}`}
                 id={node.id}
                 type={node.type as NodeType}
-                data={node.data}
+                isInLockedGroup={!!(node.data as any)?.isInLockedGroup}
+                isExecuting={!!(node.data as any)?.isExecuting}
+                focusedCommentNodeId={(node.data as any)?.focusedCommentNodeId}
                 position={node.position}
                 width={headerWidth}
                 selected={!!node.selected}
                 title={getNodeTitle(node)}
                 customTitle={node.data?.customTitle}
                 comment={node.data?.comment}
-                titlePrefix={getNodeTitlePrefix(node)}
-                onCustomTitleChange={(title) => handleCustomTitleChange(node.id, title)}
-                onCommentChange={(comment) => handleCommentChange(node.id, comment)}
-                onRun={getOnRun(node.id, node.type as string)}
-                onExpand={getOnExpand(node.id, node.type as string)}
+                provider={(node.data as any)?.selectedModel?.provider}
+                onCustomTitleChange={handleCustomTitleChange}
+                onCommentChange={handleCommentChange}
+                onRunNode={handleRunNode}
+                onExpandNode={handleExpandNode}
               />
             );
           })}

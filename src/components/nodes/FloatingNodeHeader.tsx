@@ -1,11 +1,12 @@
 "use client";
 
-import { ReactNode, useState, useEffect, useRef, useCallback } from "react";
+import { ReactNode, useState, useEffect, useRef, useCallback, memo } from "react";
 import { createPortal } from "react-dom";
 import { useReactFlow } from "@xyflow/react";
-import { NodeType } from "@/types";
+import { NodeType, ProviderType } from "@/types";
 import { useWorkflowStore } from "@/store/workflowStore";
 import { defaultNodeDimensions } from "@/store/utils/nodeDefaults";
+import { ProviderBadge } from "./ProviderBadge";
 
 export interface CommentNavigationProps {
   currentIndex: number;
@@ -14,38 +15,45 @@ export interface CommentNavigationProps {
   onNext: () => void;
 }
 
+const RUNNABLE_TYPES = new Set(['nanoBanana', 'generateVideo', 'generate3d', 'generateAudio', 'llmGenerate']);
+const EXPANDABLE_TYPES = new Set(['prompt', 'promptConstructor', 'splitGrid', 'annotation']);
+
 interface FloatingNodeHeaderProps {
   id: string;
   type: NodeType;
-  data: any;
+  isInLockedGroup?: boolean;
+  isExecuting?: boolean;
+  focusedCommentNodeId?: string | null;
   position: { x: number; y: number };
   width: number;
   selected: boolean;
-  onExpand?: () => void;
-  onRun?: () => void;
+  onExpandNode?: (nodeId: string, nodeType: string) => void;
+  onRunNode?: (nodeId: string) => void;
   headerAction?: ReactNode;
   headerButtons?: ReactNode;
-  titlePrefix?: ReactNode;
+  provider?: ProviderType;
   title: string;
   customTitle?: string;
   comment?: string;
-  onCustomTitleChange?: (title: string) => void;
-  onCommentChange?: (comment: string) => void;
+  onCustomTitleChange?: (nodeId: string, title: string) => void;
+  onCommentChange?: (nodeId: string, comment: string) => void;
   commentNavigation?: CommentNavigationProps;
 }
 
-export function FloatingNodeHeader({
+export const FloatingNodeHeader = memo(function FloatingNodeHeader({
   id,
   type,
-  data,
+  isInLockedGroup = false,
+  isExecuting = false,
+  focusedCommentNodeId,
   position,
   width,
   selected,
-  onExpand,
-  onRun,
+  onExpandNode,
+  onRunNode,
   headerAction,
   headerButtons,
-  titlePrefix,
+  provider,
   title,
   customTitle,
   comment,
@@ -53,6 +61,8 @@ export function FloatingNodeHeader({
   onCommentChange,
   commentNavigation,
 }: FloatingNodeHeaderProps) {
+  const canRun = RUNNABLE_TYPES.has(type);
+  const canExpand = EXPANDABLE_TYPES.has(type);
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
   const isBodyHovered = useWorkflowStore((state) => state.hoveredNodeId === id);
   const isHovered = isHeaderHovered || isBodyHovered;
@@ -68,14 +78,8 @@ export function FloatingNodeHeader({
   const commentButtonRef = useRef<HTMLButtonElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
-  // Check if this node is in a locked group
-  const isInLockedGroup = data?.isInLockedGroup || false;
-
   // Check if comment is focused for navigation
-  const isCommentFocused = data?.focusedCommentNodeId === id;
-
-  // Check if node is executing
-  const isExecuting = data?.isExecuting || false;
+  const isCommentFocused = focusedCommentNodeId === id;
 
   // Sync state with props
   useEffect(() => {
@@ -133,10 +137,10 @@ export function FloatingNodeHeader({
   const handleTitleSubmit = useCallback(() => {
     const trimmed = editTitleValue.trim();
     if (trimmed !== (customTitle || "")) {
-      onCustomTitleChange?.(trimmed);
+      onCustomTitleChange?.(id, trimmed);
     }
     setIsEditingTitle(false);
-  }, [editTitleValue, customTitle, onCustomTitleChange]);
+  }, [editTitleValue, customTitle, onCustomTitleChange, id]);
 
   const handleTitleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -154,10 +158,10 @@ export function FloatingNodeHeader({
   const handleCommentSubmit = useCallback(() => {
     const trimmed = editCommentValue.trim();
     if (trimmed !== (comment || "")) {
-      onCommentChange?.(trimmed);
+      onCommentChange?.(id, trimmed);
     }
     setIsEditingComment(false);
-  }, [editCommentValue, comment, onCommentChange]);
+  }, [editCommentValue, comment, onCommentChange, id]);
 
   const handleCommentKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -342,7 +346,7 @@ export function FloatingNodeHeader({
       >
         {/* Title Section */}
         <div className="flex-1 min-w-0 flex items-center gap-1.5 pl-2">
-          {titlePrefix}
+          {provider && <ProviderBadge provider={provider} />}
           {isEditingTitle ? (
             <input
               ref={titleInputRef}
@@ -487,10 +491,10 @@ export function FloatingNodeHeader({
           </div>
 
           {/* Expand Button */}
-          {onExpand && (
+          {canExpand && onExpandNode && (
             <div className="relative shrink-0 group">
               <button
-                onClick={onExpand}
+                onClick={() => onExpandNode(id, type)}
                 className="nodrag nopan p-0.5 rounded transition-all duration-200 ease-in-out text-neutral-500 group-hover:text-neutral-200 border border-neutral-600 flex items-center overflow-hidden group-hover:pr-2"
                 title="Expand editor"
               >
@@ -516,10 +520,10 @@ export function FloatingNodeHeader({
           )}
 
           {/* Run Button */}
-          {onRun && (
+          {canRun && onRunNode && (
             <div className="relative shrink-0 group">
               <button
-                onClick={onRun}
+                onClick={() => onRunNode(id)}
                 disabled={isExecuting}
                 className="nodrag nopan p-0.5 rounded transition-all duration-200 ease-in-out text-neutral-500 group-hover:text-neutral-200 border border-neutral-600 flex items-center overflow-hidden group-hover:pr-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Run this node"
@@ -537,4 +541,4 @@ export function FloatingNodeHeader({
       </div>
     </div>
   );
-}
+});
