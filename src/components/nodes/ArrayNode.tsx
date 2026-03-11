@@ -125,12 +125,15 @@ export function ArrayNode({ id, data, selected }: NodeProps<ArrayNodeType>) {
     const promptHeight = 220;
     const verticalGap = 24;
 
+    const promptNodeIds: string[] = [];
+
     items.forEach((item, index) => {
       const promptNodeId = addNode(
         "prompt",
         { x: baseX, y: baseY + index * (promptHeight + verticalGap) },
         { prompt: item }
       );
+      promptNodeIds.push(promptNodeId);
 
       // Pass the array item index directly as an edge data override
       // instead of mutating selectedOutputIndex in a loop.
@@ -144,7 +147,16 @@ export function ArrayNode({ id, data, selected }: NodeProps<ArrayNodeType>) {
         { arrayItemIndex: index }
       );
     });
-  }, [addNode, getNodes, id, onConnect, previewItems]);
+
+    // Deferred fix-up: the PromptNode text-sync effect may overwrite the
+    // individual item text before the edge arrayItemIndex data is fully
+    // settled. Re-apply the correct per-item text after effects have run.
+    setTimeout(() => {
+      items.forEach((item, index) => {
+        updateNodeData(promptNodeIds[index], { prompt: item });
+      });
+    }, 0);
+  }, [addNode, getNodes, id, onConnect, previewItems, updateNodeData]);
 
   // Reset selection if it no longer points to a valid parsed item.
   useEffect(() => {
