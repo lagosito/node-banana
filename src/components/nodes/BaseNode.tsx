@@ -81,20 +81,16 @@ export function BaseNode({
   const isAnimatingRef = useRef(false);
   const animationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isInitialMountRef = useRef(true);
-  // When true, the ResizeObserver should sync trackedSettingsHeightRef without
-  // modifying node dimensions (the height is already accounted for from a
-  // previous mount before onlyRenderVisibleElements unmounted us).
-  const skipFirstObserveRef = useRef(false);
 
   // Adjust node height when settings expand or collapse
   useLayoutEffect(() => {
     // On initial mount with settings already expanded (e.g. remount after
     // onlyRenderVisibleElements), the node height already includes the panel.
-    // Tell the ResizeObserver to sync without adding height.
+    // Just sync the tracked ref without adding height again.
     if (isInitialMountRef.current) {
       isInitialMountRef.current = false;
-      if (settingsExpanded && settingsPanel) {
-        skipFirstObserveRef.current = true;
+      if (settingsExpanded && settingsPanelRef.current) {
+        trackedSettingsHeightRef.current = settingsPanelRef.current.offsetHeight;
       }
       return;
     }
@@ -184,15 +180,6 @@ export function BaseNode({
       for (const entry of entries) {
         const newPanelHeight = entry.contentRect.height;
         if (newPanelHeight === 0) continue;
-
-        // On remount with settings already expanded, the node height already
-        // includes the panel. Just sync the ref without modifying dimensions.
-        if (skipFirstObserveRef.current) {
-          skipFirstObserveRef.current = false;
-          trackedSettingsHeightRef.current = newPanelHeight;
-          continue;
-        }
-
         const delta = newPanelHeight - trackedSettingsHeightRef.current;
         if (Math.abs(delta) < 2) continue; // Ignore sub-pixel changes
 
