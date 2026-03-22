@@ -1712,54 +1712,17 @@ const workflowStoreImpl: StateCreator<WorkflowStore> = (set, get) => ({
     // Load cost data for this workflow
     const costData = workflow.id ? loadWorkflowCostData(workflow.id) : null;
 
-    // Subtract saved settings panel height so BaseNode's expand effect
-    // re-adds the real panel height from a clean baseline (prevents
-    // height accumulation on each save/reload cycle).
-    const INLINE_PARAM_NODE_TYPES = new Set([
-      "nanoBanana", "generateVideo", "generate3d", "generateAudio", "llmGenerate",
-    ]);
-    const inlineParamsEnabled = (() => {
-      try { return localStorage.getItem("node-banana-inline-parameters") === "true"; }
-      catch { return false; }
-    })();
-
     set({
       // Clear selected state - selection should not be persisted across sessions
       // Also validate position to ensure coordinates are finite numbers
-      nodes: hydratedWorkflow.nodes.map(node => {
-        let adjustedNode = {
-          ...node,
-          selected: false,
-          position: {
-            x: isFinite(node.position?.x) ? node.position.x : 0,
-            y: isFinite(node.position?.y) ? node.position.y : 0,
-          },
-        };
-
-        // Subtract panel height for inline-param nodes so the expand effect
-        // can re-add the real measured height without double-counting
-        const data = node.data as Record<string, unknown>;
-        const panelHeight = typeof data?._settingsPanelHeight === "number" ? data._settingsPanelHeight : 0;
-        if (
-          INLINE_PARAM_NODE_TYPES.has(node.type ?? "") &&
-          inlineParamsEnabled &&
-          (data?.parametersExpanded ?? true) === true &&
-          panelHeight > 0
-        ) {
-          const currentHeight = (node.style?.height as number) ?? (defaultNodeDimensions[node.type as NodeType]?.height ?? 300);
-          const minHeight = defaultNodeDimensions[node.type as NodeType]?.height ?? 300;
-          const newHeight = Math.max(minHeight, currentHeight - panelHeight);
-          adjustedNode = {
-            ...adjustedNode,
-            width: undefined,
-            height: undefined,
-            measured: undefined,
-            style: { ...adjustedNode.style, height: newHeight },
-          } as typeof adjustedNode;
-        }
-
-        return adjustedNode;
-      }),
+      nodes: hydratedWorkflow.nodes.map(node => ({
+        ...node,
+        selected: false,
+        position: {
+          x: isFinite(node.position?.x) ? node.position.x : 0,
+          y: isFinite(node.position?.y) ? node.position.y : 0,
+        },
+      })),
       edges: hydratedWorkflow.edges,
       edgeStyle: hydratedWorkflow.edgeStyle || "angular",
       groups: hydratedWorkflow.groups || {},
