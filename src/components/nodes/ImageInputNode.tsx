@@ -87,7 +87,7 @@ export function ImageInputNode({ id, data, selected }: NodeProps<ImageInputNodeT
     <BaseNode
       id={id}
       selected={selected}
-      contentClassName="flex-1 min-h-0 overflow-clip"
+      contentClassName="flex-1 min-h-0"
       aspectFitMedia={nodeData.image}
       fullBleed
     >
@@ -109,7 +109,7 @@ export function ImageInputNode({ id, data, selected }: NodeProps<ImageInputNodeT
       />
 
       {nodeData.image ? (
-        <div className="relative group w-full h-full">
+        <div className="relative group w-full h-full overflow-clip rounded-lg">
           <img
             src={adaptiveImage ?? undefined}
             alt={nodeData.filename || "Uploaded image"}
