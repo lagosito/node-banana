@@ -332,116 +332,10 @@ function GroupControls({ groupId, zoom }: GroupControlsProps) {
               )}
             </div>
 
-            {/* Expanded controls - shown when menu is open */}
-            {showMenu && (
-              <div className="flex items-center gap-px ml-1">
-                {/* Color Picker */}
-                <div className="relative flex items-center" ref={colorPickerRef}>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setShowColorPicker(!showColorPicker); }}
-                    className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-white/20 transition-colors"
-                    title="Change color"
-                  >
-                    <div
-                      className="w-3.5 h-3.5 rounded border border-white/30 hover:border-white/60 transition-colors"
-                      style={{ backgroundColor: bgColor }}
-                    />
-                  </button>
-                  {showColorPicker && (
-                    <>
-                      {/* Invisible backdrop to catch clicks outside */}
-                      <div
-                        className="fixed inset-0 z-40"
-                        onClick={() => setShowColorPicker(false)}
-                      />
-                      <div className="absolute bottom-full left-1/2 mb-2 z-50 pointer-events-auto" style={{ transform: "translateX(-50%)" }}>
-                        {COLOR_OPTIONS.map(({ color, label }, index) => {
-                          const totalItems = COLOR_OPTIONS.length;
-                          const arcSpread = 180;
-                          const startAngle = -90 - arcSpread / 2;
-                          const angleStep = arcSpread / (totalItems - 1);
-                          const angle = startAngle + index * angleStep;
-                          const radius = 55;
-                          const rad = (angle * Math.PI) / 180;
-                          const x = Math.cos(rad) * radius;
-                          const y = Math.sin(rad) * radius;
-                          const finalX = x - 12;
-                          const finalY = y - 12;
-
-                          return (
-                            <button
-                              key={color}
-                              onClick={() => handleColorChange(color)}
-                              className={`absolute w-6 h-6 rounded-full border-2 transition-[transform,border-color] duration-150 hover:scale-110 ${
-                                group.color === color
-                                  ? "border-white"
-                                  : "border-transparent hover:border-white/50"
-                              }`}
-                              style={{
-                                backgroundColor: PICKER_PREVIEW_COLORS[color],
-                                transform: `translate(${finalX}px, ${finalY}px)`,
-                                animation: `colorFanIn-${index} 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
-                                animationDelay: `${index * 0.025}s`,
-                                opacity: 0,
-                                ["--final-x" as string]: `${finalX}px`,
-                                ["--final-y" as string]: `${finalY}px`,
-                              }}
-                              title={label}
-                            >
-                              <style>{`
-                                @keyframes colorFanIn-${index} {
-                                  0% {
-                                    opacity: 0;
-                                    transform: translate(-12px, 0px) scale(0.3);
-                                  }
-                                  100% {
-                                    opacity: 1;
-                                    transform: translate(${finalX}px, ${finalY}px) scale(1);
-                                  }
-                                }
-                              `}</style>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Lock/Unlock Button */}
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleToggleLock(); }}
-                  className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-white/20 text-white/70 hover:text-white transition-colors"
-                  title={group.locked ? "Unlock group" : "Lock group"}
-                >
-                  {group.locked ? (
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                  ) : (
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
-                    </svg>
-                  )}
-                </button>
-
-                {/* Delete Button */}
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleDelete(); }}
-                  className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-white/20 text-white/70 hover:text-white transition-colors"
-                  title="Delete group"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            )}
-
-            {/* Three-dot menu toggle - hidden when menu is open */}
-            {!showMenu && (
+            {/* Three-dot menu toggle - always visible */}
+            <div className="relative">
               <button
-                onClick={(e) => { e.stopPropagation(); setShowMenu(true); }}
+                onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
                 className="w-6 h-6 rounded-md flex flex-col items-center justify-center gap-[2px] hover:bg-white/20 transition-colors"
                 title="Group options"
               >
@@ -449,7 +343,110 @@ function GroupControls({ groupId, zoom }: GroupControlsProps) {
                 <div className="w-[3px] h-[3px] rounded-full bg-white/70" />
                 <div className="w-[3px] h-[3px] rounded-full bg-white/70" />
               </button>
-            )}
+
+              {/* Vertical context menu - appears above the three-dot button */}
+              {showMenu && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-neutral-800/90 backdrop-blur rounded-lg py-1 min-w-[130px] shadow-lg shadow-black/30">
+                  {/* Background color row */}
+                  <div className="relative" ref={colorPickerRef}>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setShowColorPicker(!showColorPicker); }}
+                      className="flex items-center gap-2 px-3 py-1.5 w-full hover:bg-white/10 text-xs text-white/80 transition-colors"
+                    >
+                      <div
+                        className="w-3 h-3 rounded-full border border-white/30"
+                        style={{ backgroundColor: bgColor }}
+                      />
+                      <span>Background</span>
+                    </button>
+                    {showColorPicker && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setShowColorPicker(false)}
+                        />
+                        <div className="absolute bottom-full left-0 mb-1 z-50 pointer-events-auto">
+                          {COLOR_OPTIONS.map(({ color, label }, index) => {
+                            const totalItems = COLOR_OPTIONS.length;
+                            const arcSpread = 150;
+                            const startAngle = -90 - arcSpread / 2;
+                            const angleStep = arcSpread / (totalItems - 1);
+                            const angle = startAngle + index * angleStep;
+                            const radius = 55;
+                            const rad = (angle * Math.PI) / 180;
+                            const x = Math.cos(rad) * radius;
+                            const y = Math.sin(rad) * radius;
+                            const finalX = x;
+                            const finalY = y - 12;
+
+                            return (
+                              <button
+                                key={color}
+                                onClick={() => handleColorChange(color)}
+                                className={`absolute w-6 h-6 rounded-full border-2 transition-[transform,border-color] duration-150 hover:scale-110 ${
+                                  group.color === color
+                                    ? "border-white"
+                                    : "border-transparent hover:border-white/50"
+                                }`}
+                                style={{
+                                  backgroundColor: PICKER_PREVIEW_COLORS[color],
+                                  transform: `translate(${finalX}px, ${finalY}px)`,
+                                  animation: `colorFanIn-${index} 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
+                                  animationDelay: `${index * 0.025}s`,
+                                  opacity: 0,
+                                }}
+                                title={label}
+                              >
+                                <style>{`
+                                  @keyframes colorFanIn-${index} {
+                                    0% {
+                                      opacity: 0;
+                                      transform: translate(0px, 0px) scale(0.3);
+                                    }
+                                    100% {
+                                      opacity: 1;
+                                      transform: translate(${finalX}px, ${finalY}px) scale(1);
+                                    }
+                                  }
+                                `}</style>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Lock/Unlock row */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleToggleLock(); setShowMenu(false); }}
+                    className="flex items-center gap-2 px-3 py-1.5 w-full hover:bg-white/10 text-xs text-white/80 transition-colors"
+                  >
+                    {group.locked ? (
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                      </svg>
+                    )}
+                    <span>{group.locked ? "Unlock" : "Lock"}</span>
+                  </button>
+
+                  {/* Delete row */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDelete(); }}
+                    className="flex items-center gap-2 px-3 py-1.5 w-full hover:bg-white/10 text-xs text-white/80 transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    <span>Delete</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
