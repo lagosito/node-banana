@@ -998,6 +998,7 @@ const workflowStoreImpl: StateCreator<WorkflowStore> = (set, get) => ({
     // Create AbortController for this execution run
     const abortController = new AbortController();
     const isResuming = startFromNodeId === get().pausedAtNodeId;
+    const skippedNodeIds = new Set<string>();
     set({ isRunning: true, pausedAtNodeId: null, currentNodeIds: [], _abortController: abortController });
 
     // Start logging session
@@ -1069,6 +1070,38 @@ const workflowStoreImpl: StateCreator<WorkflowStore> = (set, get) => ({
           groupName: nodeGroup.name,
         });
         return; // Skip this node but continue with others
+      }
+
+      // Check 1: Optional input node with no data → skip this node
+      const nodeData = node.data as Record<string, unknown>;
+      if (nodeData.isOptional) {
+        const isEmpty =
+          (node.type === "imageInput" && !nodeData.image) ||
+          (node.type === "audioInput" && !nodeData.audioFile) ||
+          (node.type === "prompt" && !(nodeData.prompt as string)?.trim());
+        if (isEmpty) {
+          skippedNodeIds.add(node.id);
+          logger.info('node.execution', 'Node skipped (optional input empty)', {
+            nodeId: node.id,
+            nodeType: node.type,
+          });
+          return;
+        }
+      }
+
+      // Check 2: Any source node is skipped → propagate skip
+      const incomingEdgesForSkip = edges.filter((e) => e.target === node.id);
+      const hasSkippedSource = incomingEdgesForSkip.some((e) => skippedNodeIds.has(e.source));
+      if (hasSkippedSource) {
+        skippedNodeIds.add(node.id);
+        if (nodeData.status !== undefined) {
+          get().updateNodeData(node.id, { status: "skipped" } as Partial<WorkflowNodeData>);
+        }
+        logger.info('node.execution', 'Node skipped (upstream source skipped)', {
+          nodeId: node.id,
+          nodeType: node.type,
+        });
+        return;
       }
 
       logger.info('node.execution', `Executing ${node.type} node`, {
@@ -1214,6 +1247,14 @@ const workflowStoreImpl: StateCreator<WorkflowStore> = (set, get) => ({
         logger.info('workflow.end', 'Workflow execution completed successfully');
       }
 
+      // Reset skipped nodes' status back to idle
+      for (const skippedId of skippedNodeIds) {
+        const skippedNode = get().nodes.find((n) => n.id === skippedId);
+        if (skippedNode && (skippedNode.data as Record<string, unknown>).status !== undefined) {
+          get().updateNodeData(skippedId, { status: "idle" } as Partial<WorkflowNodeData>);
+        }
+      }
+
       set({ isRunning: false, currentNodeIds: [], _abortController: null });
 
       saveLogSession();
@@ -1229,6 +1270,13 @@ const workflowStoreImpl: StateCreator<WorkflowStore> = (set, get) => ({
           `Workflow failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
           "error"
         );
+      }
+      // Reset skipped nodes' status back to idle
+      for (const skippedId of skippedNodeIds) {
+        const skippedNode = get().nodes.find((n) => n.id === skippedId);
+        if (skippedNode && (skippedNode.data as Record<string, unknown>).status !== undefined) {
+          get().updateNodeData(skippedId, { status: "idle" } as Partial<WorkflowNodeData>);
+        }
       }
       set({ isRunning: false, currentNodeIds: [], _abortController: null });
 
