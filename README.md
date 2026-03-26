@@ -79,11 +79,15 @@ Create a `.env.local` file in the root directory:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key
-OPENAI_API_KEY=your_openai_api_key      # Optional, for OpenAI LLM provider
-KIE_API_KEY=your_kie_api_key            # Optional, for Kie.ai models
+OPENAI_API_KEY=your_openai_api_key          # Optional
+ANTHROPIC_API_KEY=your_anthropic_api_key    # Optional
+REPLICATE_API_KEY=your_replicate_api_key    # Optional
+FAL_API_KEY=your_fal_api_key                # Optional
+KIE_API_KEY=your_kie_api_key                # Optional
+WAVESPEED_API_KEY=your_wavespeed_api_key    # Optional
 ```
 
-Additional provider API keys can be configured in Project Settings within the app.
+API keys can also be configured per-project in Project Settings within the app.
 
 ### Build
 
