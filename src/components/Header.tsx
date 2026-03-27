@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { useWorkflowStore, WorkflowFile } from "@/store/workflowStore";
+import { useWorkflowStore } from "@/store/workflowStore";
 import { useShallow } from "zustand/shallow";
 import { ProjectSetupModal } from "./ProjectSetupModal";
 import { CostIndicator } from "./CostIndicator";
 import { KeyboardShortcutsDialog } from "./KeyboardShortcutsDialog";
+import { WorkflowBrowserModal } from "./WorkflowBrowserModal";
 
 function CommentsNavigationIcon() {
   // Subscribe to nodes so we re-render when comments change
@@ -93,6 +94,7 @@ export function Header() {
 
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [projectModalMode, setProjectModalMode] = useState<"new" | "settings">("new");
+  const [showWorkflowBrowser, setShowWorkflowBrowser] = useState(false);
 
   const isProjectConfigured = !!workflowName;
   const canSave = !!(workflowId && workflowName && saveDirectoryPath);
@@ -114,36 +116,8 @@ export function Header() {
     setShowProjectModal(true);
   };
 
-  const handleOpenFile = async () => {
-    try {
-      // Open native OS directory picker
-      const browseRes = await fetch("/api/browse-directory");
-      const browseResult = await browseRes.json();
-
-      if (!browseResult.success || browseResult.cancelled || !browseResult.path) {
-        if (!browseResult.success && !browseResult.cancelled) {
-          alert(browseResult.error || "Failed to open directory picker");
-        }
-        return;
-      }
-
-      const dirPath = browseResult.path;
-
-      // Load workflow JSON from that directory
-      const loadRes = await fetch(`/api/workflow?path=${encodeURIComponent(dirPath)}&load=true`);
-      const loadResult = await loadRes.json();
-
-      if (!loadResult.success) {
-        alert(loadResult.error || "No workflow file found in directory");
-        return;
-      }
-
-      const workflow = loadResult.workflow as WorkflowFile;
-      await loadWorkflow(workflow, dirPath);
-    } catch (error) {
-      console.error("Failed to open workflow:", error);
-      alert("Failed to open workflow. Please try again.");
-    }
+  const handleOpenFile = () => {
+    setShowWorkflowBrowser(true);
   };
 
   const handleProjectSave = async (id: string, name: string, path: string) => {
@@ -229,6 +203,14 @@ export function Header() {
         onClose={() => setShowProjectModal(false)}
         onSave={handleProjectSave}
         mode={projectModalMode}
+      />
+      <WorkflowBrowserModal
+        isOpen={showWorkflowBrowser}
+        onClose={() => setShowWorkflowBrowser(false)}
+        onWorkflowLoaded={async (workflow, dirPath) => {
+          setShowWorkflowBrowser(false);
+          await loadWorkflow(workflow, dirPath);
+        }}
       />
       <header className="h-11 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-2">
