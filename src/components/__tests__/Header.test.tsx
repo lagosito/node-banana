@@ -250,24 +250,18 @@ describe("Header", () => {
       expect(openButton).toBeInTheDocument();
     });
 
-    it("should have hidden file input for loading workflows", () => {
-      const { container } = render(<Header />);
-      const fileInput = container.querySelector('input[type="file"]');
-      expect(fileInput).toBeInTheDocument();
-      expect(fileInput).toHaveAttribute("accept", ".json");
-      expect(fileInput).toHaveClass("hidden");
-    });
+    it("should call browse-directory API when open button is clicked", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ success: true, cancelled: true }),
+      });
+      global.fetch = mockFetch;
 
-    it("should trigger file input click when open button is clicked", () => {
-      const { container } = render(<Header />);
+      render(<Header />);
       const openButton = screen.getByTitle("Open project");
-      const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
-
-      // Mock click on file input
-      const clickSpy = vi.spyOn(fileInput, "click");
       fireEvent.click(openButton);
 
-      expect(clickSpy).toHaveBeenCalled();
+      expect(mockFetch).toHaveBeenCalledWith("/api/browse-directory");
     });
   });
 
@@ -405,23 +399,45 @@ describe("Header", () => {
     });
   });
 
-  describe("File Loading", () => {
-    it("should not call loadWorkflow when no file is selected", () => {
-      const { container } = render(<Header />);
-      const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+  describe("File Loading via Directory Picker", () => {
+    it("should not call loadWorkflow when directory picker is cancelled", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ success: true, cancelled: true }),
+      });
+      global.fetch = mockFetch;
 
-      // Trigger file change with empty files
-      fireEvent.change(fileInput, { target: { files: [] } });
+      render(<Header />);
+      const openButton = screen.getByTitle("Open project");
+      fireEvent.click(openButton);
 
+      // Wait for the async handler to settle
+      await vi.waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith("/api/browse-directory");
+      });
       expect(mockLoadWorkflow).not.toHaveBeenCalled();
     });
 
-    it("should reset file input value after file selection to allow re-selecting same file", () => {
-      const { container } = render(<Header />);
-      const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+    it("should load workflow from selected directory", async () => {
+      const mockWorkflow = { version: "1.0", nodes: [], edges: [], name: "Test" };
+      const mockFetch = vi.fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ success: true, path: "/path/to/project" }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ success: true, workflow: mockWorkflow, filename: "Test" }),
+        });
+      global.fetch = mockFetch;
 
-      // File input should accept .json files
-      expect(fileInput).toHaveAttribute("accept", ".json");
+      render(<Header />);
+      const openButton = screen.getByTitle("Open project");
+      fireEvent.click(openButton);
+
+      await vi.waitFor(() => {
+        expect(mockLoadWorkflow).toHaveBeenCalledWith(mockWorkflow, "/path/to/project");
+      });
     });
   });
 

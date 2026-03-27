@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useWorkflowStore, WorkflowFile } from "@/store/workflowStore";
 import { useShallow } from "zustand/shallow";
 import { ProjectSetupModal } from "./ProjectSetupModal";
@@ -93,7 +93,6 @@ export function Header() {
 
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [projectModalMode, setProjectModalMode] = useState<"new" | "settings">("new");
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isProjectConfigured = !!workflowName;
   const canSave = !!(workflowId && workflowName && saveDirectoryPath);
@@ -115,31 +114,36 @@ export function Header() {
     setShowProjectModal(true);
   };
 
-  const handleOpenFile = () => {
-    fileInputRef.current?.click();
-  };
+  const handleOpenFile = async () => {
+    try {
+      // Open native OS directory picker
+      const browseRes = await fetch("/api/browse-directory");
+      const browseResult = await browseRes.json();
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const workflow = JSON.parse(event.target?.result as string) as WorkflowFile;
-        if (workflow.version && workflow.nodes && workflow.edges) {
-          await loadWorkflow(workflow);
-        } else {
-          alert("Invalid workflow file format");
+      if (!browseResult.success || browseResult.cancelled || !browseResult.path) {
+        if (!browseResult.success && !browseResult.cancelled) {
+          alert(browseResult.error || "Failed to open directory picker");
         }
-      } catch {
-        alert("Failed to parse workflow file");
+        return;
       }
-    };
-    reader.readAsText(file);
 
-    // Reset input so same file can be loaded again
-    e.target.value = "";
+      const dirPath = browseResult.path;
+
+      // Load workflow JSON from that directory
+      const loadRes = await fetch(`/api/workflow?path=${encodeURIComponent(dirPath)}&load=true`);
+      const loadResult = await loadRes.json();
+
+      if (!loadResult.success) {
+        alert(loadResult.error || "No workflow file found in directory");
+        return;
+      }
+
+      const workflow = loadResult.workflow as WorkflowFile;
+      await loadWorkflow(workflow, dirPath);
+    } catch (error) {
+      console.error("Failed to open workflow:", error);
+      alert("Failed to open workflow. Please try again.");
+    }
   };
 
   const handleProjectSave = async (id: string, name: string, path: string) => {
@@ -225,13 +229,6 @@ export function Header() {
         onClose={() => setShowProjectModal(false)}
         onSave={handleProjectSave}
         mode={projectModalMode}
-      />
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".json"
-        onChange={handleFileChange}
-        className="hidden"
       />
       <header className="h-11 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-2">
