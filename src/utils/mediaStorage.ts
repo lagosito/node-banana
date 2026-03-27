@@ -240,12 +240,42 @@ async function externalizeNodeMedia(
         }
       }
 
+      // Strip inline image data from imageHistory items (legacy bloat)
+      // Each history item may carry a full base64 `image` field (~4.5MB each)
+      // The `image` field isn't in the CarouselImageItem type but exists at runtime
+      let cleanedHistory = d.imageHistory;
+      if (d.imageHistory?.length) {
+        cleanedHistory = [];
+        for (const item of d.imageHistory) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const legacyImage = (item as any).image as string | undefined;
+          if (legacyImage && isDataUrl(legacyImage)) {
+            // Save history image to generations if not already saved
+            await saveImageAndGetId(
+              legacyImage,
+              workflowPath, savedImageIds, "generations", item.id
+            );
+            // Push clean item with only typed fields (strips legacy `image`)
+            cleanedHistory.push({
+              id: item.id,
+              timestamp: item.timestamp,
+              prompt: item.prompt,
+              aspectRatio: item.aspectRatio,
+              model: item.model,
+            });
+          } else {
+            cleanedHistory.push(item);
+          }
+        }
+      }
+
       newData = {
         ...d,
         inputImages: inputImages.length > 0 && inputImages.every(i => i === "") ? [] : inputImages,
         inputImageRefs: inputImageRefs.length > 0 ? inputImageRefs : undefined,
         outputImage,
         outputImageRef,
+        imageHistory: cleanedHistory,
       };
       break;
     }
@@ -613,7 +643,8 @@ async function saveVideoAndGetRef(
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          directoryPath: workflowPath,
+          directoryPath: `${workflowPath}/generations`,
+          createDirectory: true,
           imageId: videoId,
           video: videoData,
         }),
@@ -680,7 +711,8 @@ async function saveAudioAndGetRef(
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          directoryPath: workflowPath,
+          directoryPath: `${workflowPath}/generations`,
+          createDirectory: true,
           imageId: audioId,
           audio: audioData,
         }),
@@ -1038,27 +1070,48 @@ async function loadMediaById(
     response = await fetch(`/api/workflow-images?${params.toString()}`);
   } else {
     // Use load-generation API for videos and audio
+    // Try generations/ subfolder first, fall back to root for legacy files
     response = await fetch("/api/load-generation", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        directoryPath: workflowPath,
+        directoryPath: `${workflowPath}/generations`,
         imageId: mediaId,
       }),
     });
+
+    let genResult = await response.json();
+
+    // Fallback to root directory for legacy files saved before generations/ fix
+    if (!genResult.success && genResult.notFound) {
+      response = await fetch("/api/load-generation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          directoryPath: workflowPath,
+          imageId: mediaId,
+        }),
+      });
+      genResult = await response.json();
+    }
+
+    const mediaData = mediaType === "video" ? genResult.video : genResult.audio;
+    if (!genResult.success) {
+      console.log(`${mediaType} not found: ${mediaId}`);
+      return "";
+    }
+    loadedMedia.set(mediaId, mediaData);
+    return mediaData;
   }
 
+  // Only images reach here (video/audio return early above)
   const result = await response.json();
 
   if (!result.success) {
-    // Missing media is expected when refs point to deleted/moved files
     console.log(`${mediaType} not found: ${mediaId}`);
-    return ""; // Return empty string to avoid breaking the workflow
+    return "";
   }
 
-  const mediaData = mediaType === "image" ? result.image
-    : mediaType === "video" ? result.video
-    : result.audio;
-  loadedMedia.set(mediaId, mediaData);
-  return mediaData;
+  loadedMedia.set(mediaId, result.image);
+  return result.image;
 }
