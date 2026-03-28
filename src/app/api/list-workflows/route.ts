@@ -6,8 +6,56 @@ import { validateWorkflowPath } from "@/utils/pathValidation";
 interface WorkflowListEntry {
   name: string;
   directoryPath: string;
-  nodeCount: number;
   lastModified: number;
+}
+
+// Read just enough of the file to find the "name" field without parsing the whole thing.
+// Workflow JSON starts with { "version": 1, "name": "..." ... } so 1KB is plenty.
+const HEAD_BYTES = 1024;
+
+async function probeWorkflow(
+  dirPath: string,
+  dirName: string
+): Promise<WorkflowListEntry | null> {
+  try {
+    const files = await fs.readdir(dirPath);
+    const jsonFiles = files.filter((f) => f.endsWith(".json"));
+
+    for (const jsonFile of jsonFiles) {
+      const filePath = path.join(dirPath, jsonFile);
+      try {
+        const handle = await fs.open(filePath, "r");
+        try {
+          const buf = Buffer.alloc(HEAD_BYTES);
+          const { bytesRead } = await handle.read(buf, 0, HEAD_BYTES, 0);
+          const head = buf.toString("utf-8", 0, bytesRead);
+
+          // Quick check: must look like a workflow file
+          if (!head.includes('"version"') || !head.includes('"nodes"')) {
+            continue;
+          }
+
+          // Extract name via regex — avoids JSON.parse on potentially huge files
+          const nameMatch = head.match(/"name"\s*:\s*"([^"]*)"/);
+          const name = nameMatch ? nameMatch[1] : dirName;
+
+          const stat = await fs.stat(filePath);
+          return {
+            name,
+            directoryPath: dirPath,
+            lastModified: stat.mtimeMs,
+          };
+        } finally {
+          await handle.close();
+        }
+      } catch {
+        continue;
+      }
+    }
+  } catch {
+    // Can't read directory
+  }
+  return null;
 }
 
 export async function GET(request: NextRequest) {
@@ -32,39 +80,16 @@ export async function GET(request: NextRequest) {
     const entries = await fs.readdir(parentPath, { withFileTypes: true });
     const directories = entries.filter((e) => e.isDirectory());
 
-    const workflows: WorkflowListEntry[] = [];
+    // Probe all directories in parallel
+    const results = await Promise.all(
+      directories.map((dir) =>
+        probeWorkflow(path.join(parentPath, dir.name), dir.name)
+      )
+    );
 
-    for (const dir of directories) {
-      const dirPath = path.join(parentPath, dir.name);
-      try {
-        const files = await fs.readdir(dirPath);
-        const jsonFiles = files.filter((f) => f.endsWith(".json"));
-
-        for (const jsonFile of jsonFiles) {
-          try {
-            const filePath = path.join(dirPath, jsonFile);
-            const content = await fs.readFile(filePath, "utf-8");
-            const parsed = JSON.parse(content);
-
-            if (parsed.version && parsed.nodes && parsed.edges) {
-              const stat = await fs.stat(filePath);
-              workflows.push({
-                name: parsed.name || dir.name,
-                directoryPath: dirPath,
-                nodeCount: parsed.nodes.length,
-                lastModified: stat.mtimeMs,
-              });
-              break; // Use first valid workflow file per directory
-            }
-          } catch {
-            continue;
-          }
-        }
-      } catch {
-        // Skip directories we can't read
-        continue;
-      }
-    }
+    const workflows = results.filter(
+      (r): r is WorkflowListEntry => r !== null
+    );
 
     // Sort by most recently modified first
     workflows.sort((a, b) => b.lastModified - a.lastModified);
@@ -74,7 +99,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to list workflows",
+        error:
+          error instanceof Error ? error.message : "Failed to list workflows",
       },
       { status: 500 }
     );

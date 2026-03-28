@@ -11,7 +11,6 @@ import {
 interface WorkflowListEntry {
   name: string;
   directoryPath: string;
-  nodeCount: number;
   lastModified: number;
 }
 
@@ -261,11 +260,7 @@ export function WorkflowBrowserView({
                     <span className="text-sm font-medium text-neutral-200 group-hover:text-neutral-100 transition-colors">
                       {entry.name}
                     </span>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xs text-neutral-500">
-                        {entry.nodeCount} node{entry.nodeCount !== 1 ? "s" : ""}
-                      </span>
-                      <span className="text-neutral-700">·</span>
+                    <div className="mt-0.5">
                       <span className="text-xs text-neutral-500">
                         {formatRelativeTime(entry.lastModified)}
                       </span>
