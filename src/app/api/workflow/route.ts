@@ -141,12 +141,14 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET: Validate directory path
+// GET: Validate directory path, or load workflow from directory
 export async function GET(request: NextRequest) {
   const directoryPath = request.nextUrl.searchParams.get("path");
+  const shouldLoad = request.nextUrl.searchParams.get("load") === "true";
 
-  logger.info('file.load', 'Directory validation request received', {
+  logger.info('file.load', 'Directory request received', {
     directoryPath,
+    shouldLoad,
   });
 
   if (!directoryPath) {
@@ -173,6 +175,54 @@ export async function GET(request: NextRequest) {
   try {
     const stats = await fs.stat(directoryPath);
     const isDirectory = stats.isDirectory();
+
+    if (!isDirectory) {
+      return NextResponse.json({
+        success: true,
+        exists: true,
+        isDirectory: false,
+      });
+    }
+
+    // If load=true, find and return a workflow JSON from the directory
+    if (shouldLoad) {
+      const entries = await fs.readdir(directoryPath);
+      const jsonFiles = entries.filter(f => f.endsWith(".json"));
+
+      for (const jsonFile of jsonFiles) {
+        try {
+          const filePath = path.join(directoryPath, jsonFile);
+          const content = await fs.readFile(filePath, "utf-8");
+          const parsed = JSON.parse(content);
+
+          if (parsed.version && parsed.nodes && parsed.edges) {
+            const filename = path.basename(jsonFile, ".json");
+            logger.info('file.load', 'Workflow loaded from directory', {
+              directoryPath,
+              filename: jsonFile,
+            });
+            return NextResponse.json({
+              success: true,
+              workflow: parsed,
+              filename,
+            });
+          }
+        } catch {
+          // Skip files that can't be read or parsed
+          continue;
+        }
+      }
+
+      logger.warn('file.load', 'No valid workflow file found in directory', {
+        directoryPath,
+        jsonFilesChecked: jsonFiles.length,
+      });
+      return NextResponse.json(
+        { success: false, error: "No workflow file found in directory" },
+        { status: 404 }
+      );
+    }
+
     logger.info('file.load', 'Directory validation successful', {
       directoryPath,
       exists: true,
