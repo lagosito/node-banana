@@ -1004,9 +1004,8 @@ const workflowStoreImpl: StateCreator<WorkflowStore> = (set, get) => ({
     // Create AbortController for this execution run
     const abortController = new AbortController();
     const isResuming = startFromNodeId === get().pausedAtNodeId;
-    const skippedNodeIds = new Set<string>();
     const resetSkippedNodes = () => {
-      for (const skippedId of skippedNodeIds) {
+      for (const skippedId of get().skippedNodeIds) {
         const skippedNode = get().nodes.find((n) => n.id === skippedId);
         if (skippedNode && (skippedNode.data as Record<string, unknown>).status !== undefined) {
           get().updateNodeData(skippedId, { status: "idle" } as Partial<WorkflowNodeData>);
@@ -1094,8 +1093,7 @@ const workflowStoreImpl: StateCreator<WorkflowStore> = (set, get) => ({
           (node.type === "audioInput" && !nodeData.audioFile) ||
           (node.type === "prompt" && !(nodeData.prompt as string)?.trim());
         if (isEmpty) {
-          skippedNodeIds.add(node.id);
-          set({ skippedNodeIds: new Set(skippedNodeIds) });
+          set({ skippedNodeIds: new Set([...get().skippedNodeIds, node.id]) });
           logger.info('node.execution', 'Node skipped (optional input empty)', {
             nodeId: node.id,
             nodeType: node.type,
@@ -1106,10 +1104,9 @@ const workflowStoreImpl: StateCreator<WorkflowStore> = (set, get) => ({
 
       // Check 2: Any source node is skipped → propagate skip
       const incomingEdgesForSkip = edges.filter((e) => e.target === node.id);
-      const hasSkippedSource = incomingEdgesForSkip.some((e) => skippedNodeIds.has(e.source));
+      const hasSkippedSource = incomingEdgesForSkip.some((e) => get().skippedNodeIds.has(e.source));
       if (hasSkippedSource) {
-        skippedNodeIds.add(node.id);
-        set({ skippedNodeIds: new Set(skippedNodeIds) });
+        set({ skippedNodeIds: new Set([...get().skippedNodeIds, node.id]) });
         if (nodeData.status !== undefined) {
           get().updateNodeData(node.id, { status: "skipped" } as Partial<WorkflowNodeData>);
         }
@@ -1263,6 +1260,7 @@ const workflowStoreImpl: StateCreator<WorkflowStore> = (set, get) => ({
         logger.info('workflow.end', 'Workflow execution completed successfully');
       }
 
+      // Reset skipped nodes' status back to idle
       resetSkippedNodes();
 
       set({ isRunning: false, currentNodeIds: [], skippedNodeIds: new Set(), _abortController: null });
@@ -1281,6 +1279,7 @@ const workflowStoreImpl: StateCreator<WorkflowStore> = (set, get) => ({
           "error"
         );
       }
+      // Reset skipped nodes' status back to idle
       resetSkippedNodes();
       set({ isRunning: false, currentNodeIds: [], skippedNodeIds: new Set(), _abortController: null });
 
