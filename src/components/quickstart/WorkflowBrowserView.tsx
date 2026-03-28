@@ -192,7 +192,7 @@ export function WorkflowBrowserView({
             </h2>
           </div>
           <p className="text-sm text-neutral-500 max-w-xs text-center">
-            Choose a folder that contains your workflow projects. You can change this later.
+            Choose the folder that contains your workflow projects. You can change this later.
           </p>
           <button
             onClick={browseAndSetDir}
