@@ -152,7 +152,6 @@ function GroupControls({ groupId, zoom }: GroupControlsProps) {
   // Header drag handlers
   const handleHeaderMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (group?.locked) return;
       if (
         (e.target as HTMLElement).closest("button") ||
         (e.target as HTMLElement).closest("input")
@@ -164,13 +163,12 @@ function GroupControls({ groupId, zoom }: GroupControlsProps) {
       setIsDragging(true);
       dragStartRef.current = { x: e.clientX, y: e.clientY };
     },
-    [group?.locked]
+    []
   );
 
   // Resize handlers
   const handleResizeMouseDown = useCallback(
     (e: React.MouseEvent, handle: string) => {
-      if (group?.locked) return;
       e.stopPropagation();
       e.preventDefault();
       setIsResizing(true);
@@ -184,7 +182,7 @@ function GroupControls({ groupId, zoom }: GroupControlsProps) {
         posY: group.position.y,
       };
     },
-    [group?.locked, group?.size, group?.position]
+    [group?.size, group?.position]
   );
 
   useEffect(() => {
@@ -319,6 +317,11 @@ function GroupControls({ groupId, zoom }: GroupControlsProps) {
               className="flex items-center rounded-md px-2 py-0.5"
               style={{ backgroundColor: bgColor }}
             >
+              {group.locked && (
+                <svg className="w-3 h-3 text-white/70 mr-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              )}
               {isEditing ? (
                 <input
                   ref={inputRef}
@@ -334,7 +337,7 @@ function GroupControls({ groupId, zoom }: GroupControlsProps) {
                 <span
                   className="text-xs font-medium text-white truncate"
                   style={{ maxWidth: 200 }}
-                  onDoubleClick={(e) => { e.stopPropagation(); if (!group.locked) setIsEditing(true); }}
+                  onDoubleClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
                 >
                   {group.name}
                 </span>
