@@ -5,7 +5,7 @@
  * for all undoable actions (add/remove nodes, connect edges, etc.).
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { act } from "@testing-library/react";
 import { useWorkflowStore } from "../workflowStore";
 
@@ -52,7 +52,12 @@ function resetStore() {
 
 describe("Undo/Redo integration", () => {
   beforeEach(() => {
+    vi.useFakeTimers();
     resetStore();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("starts with canUndo and canRedo both false", () => {
@@ -263,6 +268,86 @@ describe("Undo/Redo integration", () => {
       expect(store.nodes.length).toBe(2);
       expect(store.edges.length).toBe(1);
       expect(store.nodes.find((n) => n.id === promptId)).toBeDefined();
+
+      // The delete should have been exactly one undo entry — undoing again
+      // should go back to before the edge was connected, not to some
+      // intermediate state caused by clearStaleInputImages side effects
+      act(() => {
+        store.undo();
+      });
+      store = useWorkflowStore.getState();
+      // Previous checkpoint was onConnect, so edges should be gone
+      expect(store.edges.length).toBe(0);
+      expect(store.nodes.length).toBe(2);
+    });
+
+    it("single undo restores image-source node and does not create extra entries from clearStaleInputImages", async () => {
+      let store = useWorkflowStore.getState();
+
+      // Create imageInput -> nanoBanana (image connection triggers clearStaleInputImages on delete)
+      act(() => {
+        store.addNode("imageInput", { x: 0, y: 0 });
+      });
+      store = useWorkflowStore.getState();
+      act(() => {
+        store.addNode("nanoBanana", { x: 300, y: 0 });
+      });
+      store = useWorkflowStore.getState();
+      const imageInputId = store.nodes[0].id;
+      const genId = store.nodes[1].id;
+
+      act(() => {
+        store.onConnect({
+          source: imageInputId,
+          target: genId,
+          sourceHandle: "image",
+          targetHandle: "image",
+        });
+      });
+
+      store = useWorkflowStore.getState();
+      expect(store.nodes.length).toBe(2);
+      expect(store.edges.length).toBe(1);
+
+      // Delete the imageInput node — this triggers clearStaleInputImages
+      // which calls updateNodeData on the nanoBanana target
+      act(() => {
+        store.onNodesChange([{ type: "remove", id: imageInputId }]);
+        store.onEdgesChange([{ type: "remove", id: store.edges[0].id }]);
+      });
+
+      // Wait for microtask to clear nodeRemoveCheckpointActive
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      // Also advance past the debounced data-change timer (500ms)
+      await act(async () => {
+        vi.advanceTimersByTime(600);
+      });
+
+      store = useWorkflowStore.getState();
+      expect(store.nodes.length).toBe(1);
+      expect(store.edges.length).toBe(0);
+
+      // Single undo should restore the node and edge
+      act(() => {
+        store.undo();
+      });
+
+      store = useWorkflowStore.getState();
+      expect(store.nodes.length).toBe(2);
+      expect(store.edges.length).toBe(1);
+      expect(store.nodes.find((n) => n.id === imageInputId)).toBeDefined();
+
+      // Verify no extra undo entries from clearStaleInputImages:
+      // Next undo should go back to before onConnect (2 nodes, 0 edges)
+      act(() => {
+        store.undo();
+      });
+      store = useWorkflowStore.getState();
+      expect(store.edges.length).toBe(0);
+      expect(store.nodes.length).toBe(2);
     });
   });
 

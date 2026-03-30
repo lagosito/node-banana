@@ -682,8 +682,9 @@ const workflowStoreImpl: StateCreator<WorkflowStore> = (set, get) => ({
   updateNodeData: (nodeId: string, data: Partial<WorkflowNodeData>) => {
     const node = get().nodes.find((n) => n.id === nodeId);
 
-    // Debounced undo tracking: skip during execution
-    if (!get().isRunning) {
+    // Debounced undo tracking: skip during execution and during node removal
+    // (clearStaleInputImages calls updateNodeData as a side effect of deletion)
+    if (!get().isRunning && !nodeRemoveCheckpointActive) {
       if (!pendingDataSnapshot) {
         pendingDataSnapshot = captureUndoSnapshot(get());
       }
