@@ -1663,10 +1663,24 @@ const workflowStoreImpl: StateCreator<WorkflowStore> = (set, get) => ({
 
       switch (node.type) {
         case "imageInput":
-        case "audioInput":
-        case "videoInput":
-          // Data source nodes - no execution needed
+          // Data source node - no execution needed
           break;
+        case "audioInput": {
+          // If audio is connected from upstream, use it (connection wins over upload)
+          const audioInputs = get().getConnectedInputs(node.id);
+          if (audioInputs.audio.length > 0 && audioInputs.audio[0]) {
+            get().updateNodeData(node.id, { audioFile: audioInputs.audio[0] });
+          }
+          break;
+        }
+        case "videoInput": {
+          // If video is connected from upstream, use it (connection wins over upload)
+          const videoInputs = get().getConnectedInputs(node.id);
+          if (videoInputs.videos.length > 0 && videoInputs.videos[0]) {
+            get().updateNodeData(node.id, { video: videoInputs.videos[0] });
+          }
+          break;
+        }
         case "glbViewer":
           await executeGlbViewer(executionCtx);
           break;
