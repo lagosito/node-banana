@@ -539,6 +539,10 @@ export function ModelSearchDialog({
           color = "bg-fuchsia-500/20 text-fuchsia-300";
           label = "txt→audio";
           break;
+        case "audio-to-video":
+          color = "bg-violet-500/20 text-violet-300";
+          label = "audio→vid";
+          break;
       }
 
       if (label) {
