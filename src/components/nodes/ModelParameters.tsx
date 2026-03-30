@@ -84,7 +84,8 @@ function ModelParametersInner({
 
   // Fetch schema when modelId changes
   useEffect(() => {
-    if (!modelId || provider === "gemini") {
+    const isVeoModel = modelId?.startsWith("veo-");
+    if (!modelId || (provider === "gemini" && !isVeoModel)) {
       setSchema([]);
       onInputsLoaded?.([]);
       return;
