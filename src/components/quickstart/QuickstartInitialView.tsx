@@ -90,7 +90,7 @@ export function QuickstartInitialView({
               className="flex items-center gap-2 text-sm text-neutral-400 hover:text-neutral-200 transition-colors"
             >
               <img src="/banana_icon.png" alt="" className="w-4 h-4" />
-              Node Banana Pro Waitlist
+              NBP Waitlist
             </a>
           </div>
         </div>
