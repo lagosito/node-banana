@@ -571,13 +571,15 @@ function extractParametersFromSchema(
   const inputs: ModelInput[] = [];
 
   for (const [name, prop] of Object.entries(properties)) {
-    // Check if this is a connectable input (image or text)
-    // Pass both name AND prop to check schema type, not just name
-    if (isImageInput(name, prop, schemaComponents)) {
+    // Check if this is a connectable input (audio, image, or text)
+    // Audio is checked first — it matches specific name patterns while image
+    // detection is more permissive (e.g. description heuristics like "data uri"
+    // can false-positive on audio properties).
+    if (isAudioInput(name, prop, schemaComponents)) {
       const resolvedType = resolvePropertyType(prop, schemaComponents).type;
       inputs.push({
         name,
-        type: "image",
+        type: "audio",
         required: required.includes(name),
         label: toLabel(name),
         description: prop.description as string | undefined,
@@ -586,11 +588,11 @@ function extractParametersFromSchema(
       continue;
     }
 
-    if (isAudioInput(name, prop, schemaComponents)) {
+    if (isImageInput(name, prop, schemaComponents)) {
       const resolvedType = resolvePropertyType(prop, schemaComponents).type;
       inputs.push({
         name,
-        type: "audio",
+        type: "image",
         required: required.includes(name),
         label: toLabel(name),
         description: prop.description as string | undefined,
