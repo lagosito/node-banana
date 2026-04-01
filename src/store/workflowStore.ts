@@ -146,11 +146,8 @@ function buildConnectionEdgeData(
   if (sourceNode?.type === "array" && (connection.sourceHandle || "text") === "text") {
     const sourceData = sourceNode.data as Record<string, unknown>;
 
-    // Batch mode: all items sent through a single connection
-    if (sourceData.batchMode === true) {
-      baseData.arrayBatchAll = true;
-      return baseData;
-    }
+    // Batch mode is now derived dynamically in connectedInputs.ts from
+    // the source node's batchMode — no need to stamp edge metadata.
 
     const selectedIndex = sourceData.selectedOutputIndex;
     const outputItems = Array.isArray(sourceData.outputItems) ? sourceData.outputItems : [];
