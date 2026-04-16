@@ -4,12 +4,20 @@ import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import { ReactFlowProvider } from "@xyflow/react";
 import { Header } from "@/components/Header";
-import { WorkflowCanvas } from "@/components/WorkflowCanvas";
-import { FloatingActionBar } from "@/components/FloatingActionBar";
 import { useWorkflowStore } from "@/store/workflowStore";
 
-// Konva (react-konva) accesses document.createElement at import time,
-// which crashes during SSR. Load it only on the client.
+// WorkflowCanvas pulls in Three.js (GLBViewerNode) and Konva (AnnotationModal)
+// both of which call document.createElement at import time and crash during SSR.
+const WorkflowCanvas = dynamic(
+  () => import("@/components/WorkflowCanvas").then((m) => m.WorkflowCanvas),
+  { ssr: false }
+);
+
+const FloatingActionBar = dynamic(
+  () => import("@/components/FloatingActionBar").then((m) => m.FloatingActionBar),
+  { ssr: false }
+);
+
 const AnnotationModal = dynamic(
   () => import("@/components/AnnotationModal").then((m) => m.AnnotationModal),
   { ssr: false }
