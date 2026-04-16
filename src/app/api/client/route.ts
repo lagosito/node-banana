@@ -12,8 +12,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 const AIRTABLE_BASE_ID = "appuXgF7lJxG52Tqd";
 const AIRTABLE_CLIENTS_TABLE = "tblZ0fnEbWD6zwqR0";
+const AIRTABLE_CLIENTS_VIEW = "viwuHcm2cjn8sDncI";
 const AIRTABLE_BRAND_DNA_TABLE = "tbl1OX9uas15XkE5F";
 
+// Field IDs from Airtable schema
 const CLIENT_FIELDS = {
   clientName: "fld3CMtzrLHzyh4o7",
   firstName: "fldpzUpWe1fPZcAsl",
@@ -50,6 +52,7 @@ export interface ClientBrandDNA {
   status: string;
   brandLogoUrl: string;
   customizations: string;
+  // Brand DNA
   logo: string;
   primaryColor: string;
   secondaryColor: string;
@@ -68,39 +71,67 @@ export interface ClientBrandDNA {
 async function airtableFetch(url: string) {
   const apiKey = process.env.AIRTABLE_API_KEY;
   if (!apiKey) throw new Error("AIRTABLE_API_KEY not configured");
+
   const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
   });
-  if (!res.ok) { const err = await res.text(); throw new Error(`Airtable error ${res.status}: ${err}`); }
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Airtable error ${res.status}: ${err}`);
+  }
+
   return res.json();
 }
 
+// GET /api/client — returns list of all active clients
+// GET /api/client?name=ClientName — returns full Brand DNA for a client
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const clientName = searchParams.get("name");
+
   try {
     if (!clientName) {
-      const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_CLIENTS_TABLE}?fields[]=${CLIENT_FIELDS.clientName}&fields[]=${CLIENT_FIELDS.firstName}&fields[]=${CLIENT_FIELDS.status}&sort[0][field]=${CLIENT_FIELDS.clientName}&sort[0][direction]=asc`;
+      // Return list of all clients
+      const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_CLIENTS_TABLE}?view=${AIRTABLE_CLIENTS_VIEW}&fields[]=${CLIENT_FIELDS.clientName}&fields[]=${CLIENT_FIELDS.firstName}&fields[]=${CLIENT_FIELDS.status}&sort[0][field]=${CLIENT_FIELDS.clientName}&sort[0][direction]=asc`;
       const data = await airtableFetch(url);
-      const clients = data.records.map((r: AirtableRecord) => ({
-        id: r.id,
-        clientName: r.fields[CLIENT_FIELDS.clientName] || "",
-        firstName: r.fields[CLIENT_FIELDS.firstName] || "",
-        status: r.fields[CLIENT_FIELDS.status] || "",
-      }));
+
+      const clients = data.records
+        .map((r: AirtableRecord) => ({
+          id: r.id,
+          clientName: r.fields[CLIENT_FIELDS.clientName] || "",
+          firstName: r.fields[CLIENT_FIELDS.firstName] || "",
+          status: r.fields[CLIENT_FIELDS.status] || "",
+        }))
+        .filter((c: { clientName: string }) => c.clientName.trim() !== "");
+
       return NextResponse.json({ clients });
     }
+
+    // Fetch specific client
     const encodedName = encodeURIComponent(clientName);
-    const clientUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_CLIENTS_TABLE}?filterByFormula=LOWER({Client Name})=LOWER("${encodedName}")`;
+    const clientUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_CLIENTS_TABLE}?filterByFormula=LOWER({${CLIENT_FIELDS.clientName}})=LOWER("${encodedName}")`;
     const clientData = await airtableFetch(clientUrl);
+
     if (!clientData.records || clientData.records.length === 0) {
       return NextResponse.json({ error: "Client not found" }, { status: 404 });
     }
-    const cf = clientData.records[0].fields;
-    const brandUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_BRAND_DNA_TABLE}?filterByFormula=LOWER({Client Name})=LOWER("${encodedName}")`;
+
+    const clientRecord = clientData.records[0];
+    const cf = clientRecord.fields;
+
+    // Fetch Brand DNA
+    const brandUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_BRAND_DNA_TABLE}?filterByFormula=LOWER({${BRAND_DNA_FIELDS.clientName}})=LOWER("${encodedName}")`;
     const brandData = await airtableFetch(brandUrl);
-    const bf = brandData.records?.[0]?.fields || {};
+
+    const brandRecord = brandData.records?.[0];
+    const bf = brandRecord?.fields || {};
+
     const result: ClientBrandDNA = {
+      // Client fields
       clientName: cf[CLIENT_FIELDS.clientName] || "",
       firstName: cf[CLIENT_FIELDS.firstName] || "",
       email: cf[CLIENT_FIELDS.email] || "",
@@ -108,6 +139,7 @@ export async function GET(request: NextRequest) {
       status: cf[CLIENT_FIELDS.status] || "",
       brandLogoUrl: cf[CLIENT_FIELDS.brandLogoUrl] || "",
       customizations: cf[CLIENT_FIELDS.customizations] || "",
+      // Brand DNA fields
       logo: bf[BRAND_DNA_FIELDS.logo] || "",
       primaryColor: bf[BRAND_DNA_FIELDS.primaryColor] || "",
       secondaryColor: bf[BRAND_DNA_FIELDS.secondaryColor] || "",
@@ -122,6 +154,7 @@ export async function GET(request: NextRequest) {
       dos: bf[BRAND_DNA_FIELDS.dos] || "",
       donts: bf[BRAND_DNA_FIELDS.donts] || "",
     };
+
     return NextResponse.json({ client: result });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
