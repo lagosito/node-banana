@@ -62,7 +62,6 @@ export function ClientLoader() {
   const [tab, setTab] = useState<Tab>("client");
   const [isOpen, setIsOpen] = useState(false);
 
-  // Client tab state
   const [clients, setClients] = useState<ClientEntry[]>([]);
   const [selectedName, setSelectedName] = useState("");
   const [selectedTier, setSelectedTier] = useState("starter");
@@ -71,7 +70,6 @@ export function ClientLoader() {
   const [currentClient, setCurrentClient] = useState<ClientBrandDNA | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Workflow tab state
   const [selectedWorkflow, setSelectedWorkflow] = useState("starter");
   const [loadingWorkflow, setLoadingWorkflow] = useState(false);
   const [workflowError, setWorkflowError] = useState<string | null>(null);
@@ -82,7 +80,6 @@ export function ClientLoader() {
     loadWorkflow: state.loadWorkflow,
   })));
 
-  // Load client list when panel opens
   useEffect(() => {
     if (!isOpen || clients.length > 0) return;
     setLoadingClients(true);
@@ -175,43 +172,34 @@ export function ClientLoader() {
     <div className="relative">
       <button
         onClick={() => setIsOpen((v) => !v)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium
-                   bg-yellow-400 hover:bg-yellow-300 text-black transition-colors"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-yellow-400 hover:bg-yellow-300 text-black transition-colors"
         title="El Kiosk — Load client or workflow"
       >
         🍌 {currentClient ? currentClient.clientName : "Load Client"}
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 z-50 w-80
-                        bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-4">
-          {/* Header */}
+        <div className="absolute top-full left-0 mt-2 z-50 w-80 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-white">🍌 El Kiosk</h3>
             <button onClick={() => setIsOpen(false)} className="text-zinc-400 hover:text-white text-lg leading-none">×</button>
           </div>
 
-          {/* Tabs */}
           <div className="flex gap-1 mb-4 bg-zinc-800 rounded-lg p-1">
             <button
               onClick={() => setTab("client")}
-              className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                tab === "client" ? "bg-yellow-400 text-black" : "text-zinc-400 hover:text-white"
-              }`}
+              className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${tab === "client" ? "bg-yellow-400 text-black" : "text-zinc-400 hover:text-white"}`}
             >
               👤 Cliente
             </button>
             <button
               onClick={() => setTab("workflow")}
-              className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                tab === "workflow" ? "bg-yellow-400 text-black" : "text-zinc-400 hover:text-white"
-              }`}
+              className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${tab === "workflow" ? "bg-yellow-400 text-black" : "text-zinc-400 hover:text-white"}`}
             >
               📋 Workflow
             </button>
           </div>
 
-          {/* CLIENT TAB */}
           {tab === "client" && (
             <div>
               {error && (
@@ -226,8 +214,7 @@ export function ClientLoader() {
                   <select
                     value={selectedName}
                     onChange={(e) => setSelectedName(e.target.value)}
-                    className="w-full bg-zinc-800 border border-zinc-600 rounded-md px-2 py-1.5
-                               text-sm text-white focus:outline-none focus:border-yellow-400"
+                    className="w-full bg-zinc-800 border border-zinc-600 rounded-md px-2 py-1.5 text-sm text-white focus:outline-none focus:border-yellow-400"
                   >
                     <option value="">— Seleccionar cliente —</option>
                     {clients.map((c) => (
@@ -244,8 +231,7 @@ export function ClientLoader() {
                 <select
                   value={selectedTier}
                   onChange={(e) => setSelectedTier(e.target.value)}
-                  className="w-full bg-zinc-800 border border-zinc-600 rounded-md px-2 py-1.5
-                             text-sm text-white focus:outline-none focus:border-yellow-400"
+                  className="w-full bg-zinc-800 border border-zinc-600 rounded-md px-2 py-1.5 text-sm text-white focus:outline-none focus:border-yellow-400"
                 >
                   {Object.entries(TIER_LABEL).map(([k, v]) => (
                     <option key={k} value={k}>{v}</option>
@@ -257,18 +243,14 @@ export function ClientLoader() {
                 <button
                   onClick={handleLoadClient}
                   disabled={!selectedName || loadingClient}
-                  className="flex-1 py-2 rounded-md text-sm font-medium
-                             bg-yellow-400 hover:bg-yellow-300 text-black
-                             disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="flex-1 py-2 rounded-md text-sm font-medium bg-yellow-400 hover:bg-yellow-300 text-black disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   {loadingClient ? "Cargando…" : "Cargar Workflow + Brand"}
                 </button>
                 <button
                   onClick={handleInjectOnly}
                   disabled={!selectedName || loadingClient}
-                  className="px-3 py-2 rounded-md text-sm
-                             bg-zinc-700 hover:bg-zinc-600 text-white
-                             disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="px-3 py-2 rounded-md text-sm bg-zinc-700 hover:bg-zinc-600 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   title="Inyectar Brand DNA sin cambiar el workflow actual"
                 >
                   DNA only
@@ -294,7 +276,6 @@ export function ClientLoader() {
             </div>
           )}
 
-          {/* WORKFLOW TAB */}
           {tab === "workflow" && (
             <div>
               {workflowError && (
@@ -308,8 +289,7 @@ export function ClientLoader() {
                 <select
                   value={selectedWorkflow}
                   onChange={(e) => setSelectedWorkflow(e.target.value)}
-                  className="w-full bg-zinc-800 border border-zinc-600 rounded-md px-2 py-1.5
-                             text-sm text-white focus:outline-none focus:border-yellow-400"
+                  className="w-full bg-zinc-800 border border-zinc-600 rounded-md px-2 py-1.5 text-sm text-white focus:outline-none focus:border-yellow-400"
                 >
                   {Object.entries(TIER_LABEL).map(([k, v]) => (
                     <option key={k} value={k}>{v}</option>
@@ -319,9 +299,7 @@ export function ClientLoader() {
               <button
                 onClick={handleLoadWorkflowOnly}
                 disabled={loadingWorkflow}
-                className="w-full py-2 rounded-md text-sm font-medium
-                           bg-yellow-400 hover:bg-yellow-300 text-black
-                           disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="w-full py-2 rounded-md text-sm font-medium bg-yellow-400 hover:bg-yellow-300 text-black disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 {loadingWorkflow ? "Cargando…" : "Cargar Workflow"}
               </button>
