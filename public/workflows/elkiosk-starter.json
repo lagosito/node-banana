@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "id": "elkiosk-starter-template",
+  "name": "⭐ Starter — 10 Posts (IG + FB)",
+  "_elkiosk": { "tier": "starter", "platforms": ["Instagram", "Facebook"] },
+  "edgeStyle": "default",
+  "groups": {
+    "group-brand": { "id": "group-brand", "name": "🎨 Brand DNA", "color": "purple", "position": { "x": -20, "y": -20 }, "size": { "width": 700, "height": 320 }, "locked": false },
+    "group-batch1": { "id": "group-batch1", "name": "📸 Batch 1 — Posts 1–4", "color": "blue", "position": { "x": -20, "y": 360 }, "size": { "width": 1400, "height": 400 }, "locked": false },
+    "group-batch2": { "id": "group-batch2", "name": "📸 Batch 2 — Posts 5–8", "color": "green", "position": { "x": -20, "y": 820 }, "size": { "width": 1400, "height": 400 }, "locked": false }
+  },
+  "nodes": [
+    { "id": "prompt-brand", "type": "prompt", "position": { "x": 20, "y": 40 }, "groupId": "group-brand", "data": { "label": "Brand Context", "variableName": "brand_context", "prompt": "⚠️ Load a client above to populate this automatically.
+
+Brand: [Client Name]
+Colors: primary [#color], secondary [#color]
+Fonts: [Display Font] / [Body Font]
+Tone: [tone tags]
+Aesthetic: [aesthetic tags]
+Tagline: [tagline]
+Do's: [dos]
+Don'ts: [donts]", "status": "idle", "error": null }, "width": 320, "height": 260 },
+    { "id": "prompt-platform", "type": "prompt", "position": { "x": 360, "y": 40 }, "groupId": "group-brand", "data": { "label": "Platform & Format", "variableName": "platform", "prompt": "Platforms: Instagram, Facebook
+Format: Square 1:1
+Style: Feed post, high quality, brand-consistent
+Tier: Starter (10 posts)", "status": "idle", "error": null }, "width": 300, "height": 180 },
+    { "id": "llm-post-1", "type": "llmGenerate", "position": { "x": 20, "y": 440 }, "groupId": "group-batch1", "data": { "label": "Post 1 — Prompt", "inputPrompt": null, "inputImages": [], "outputText": null, "provider": "anthropic", "model": "claude-opus-4-5", "temperature": 0.8, "maxTokens": 200, "status": "idle", "error": null }, "width": 280, "height": 200 },
+    { "id": "img-post-1", "type": "nanoBanana", "position": { "x": 340, "y": 440 }, "groupId": "group-batch1", "data": { "label": "Post 1 — Image", "inputImages": [], "inputPrompt": null, "outputImage": null, "aspectRatio": "1:1", "resolution": "1K", "model": "nano-banana-pro", "selectedModel": { "provider": "gemini", "modelId": "nano-banana-pro", "displayName": "Nano Banana Pro" }, "useGoogleSearch": false, "useImageSearch": false, "status": "idle", "error": null, "imageHistory": [], "selectedHistoryIndex": 0 }, "width": 300, "height": 300 },
+    { "id": "llm-post-2", "type": "llmGenerate", "position": { "x": 680, "y": 440 }, "groupId": "group-batch1", "data": { "label": "Post 2 — Prompt", "inputPrompt": null, "inputImages": [], "outputText": null, "provider": "anthropic", "model": "claude-opus-4-5", "temperature": 0.8, "maxTokens": 200, "status": "idle", "error": null }, "width": 280, "height": 200 },
+    { "id": "img-post-2", "type": "nanoBanana", "position": { "x": 1000, "y": 440 }, "groupId": "group-batch1", "data": { "label": "Post 2 — Image", "inputImages": [], "inputPrompt": null, "outputImage": null, "aspectRatio": "1:1", "resolution": "1K", "model": "nano-banana-pro", "selectedModel": { "provider": "gemini", "modelId": "nano-banana-pro", "displayName": "Nano Banana Pro" }, "useGoogleSearch": false, "useImageSearch": false, "status": "idle", "error": null, "imageHistory": [], "selectedHistoryIndex": 0 }, "width": 300, "height": 300 },
+    { "id": "llm-post-3", "type": "llmGenerate", "position": { "x": 20, "y": 900 }, "groupId": "group-batch2", "data": { "label": "Post 3 — Prompt", "inputPrompt": null, "inputImages": [], "outputText": null, "provider": "anthropic", "model": "claude-opus-4-5", "temperature": 0.8, "maxTokens": 200, "status": "idle", "error": null }, "width": 280, "height": 200 },
+    { "id": "img-post-3", "type": "nanoBanana", "position": { "x": 340, "y": 900 }, "groupId": "group-batch2", "data": { "label": "Post 3 — Image", "inputImages": [], "inputPrompt": null, "outputImage": null, "aspectRatio": "1:1", "resolution": "1K", "model": "nano-banana-pro", "selectedModel": { "provider": "gemini", "modelId": "nano-banana-pro", "displayName": "Nano Banana Pro" }, "useGoogleSearch": false, "useImageSearch": false, "status": "idle", "error": null, "imageHistory": [], "selectedHistoryIndex": 0 }, "width": 300, "height": 300 },
+    { "id": "llm-post-4", "type": "llmGenerate", "position": { "x": 680, "y": 900 }, "groupId": "group-batch2", "data": { "label": "Post 4 — Prompt", "inputPrompt": null, "inputImages": [], "outputText": null, "provider": "anthropic", "model": "claude-opus-4-5", "temperature": 0.8, "maxTokens": 200, "status": "idle", "error": null }, "width": 280, "height": 200 },
+    { "id": "img-post-4", "type": "nanoBanana", "position": { "x": 1000, "y": 900 }, "groupId": "group-batch2", "data": { "label": "Post 4 — Image", "inputImages": [], "inputPrompt": null, "outputImage": null, "aspectRatio": "1:1", "resolution": "1K", "model": "nano-banana-pro", "selectedModel": { "provider": "gemini", "modelId": "nano-banana-pro", "displayName": "Nano Banana Pro" }, "useGoogleSearch": false, "useImageSearch": false, "status": "idle", "error": null, "imageHistory": [], "selectedHistoryIndex": 0 }, "width": 300, "height": 300 },
+    { "id": "gallery-output", "type": "outputGallery", "position": { "x": 1500, "y": 600 }, "data": { "label": "📤 Output Gallery", "images": [], "status": "idle", "error": null }, "width": 400, "height": 500 }
+  ],
+  "edges": [
+    { "id": "e-brand-llm1", "source": "prompt-brand", "target": "llm-post-1", "sourceHandle": "text", "targetHandle": "text" },
+    { "id": "e-brand-llm2", "source": "prompt-brand", "target": "llm-post-2", "sourceHandle": "text", "targetHandle": "text" },
+    { "id": "e-brand-llm3", "source": "prompt-brand", "target": "llm-post-3", "sourceHandle": "text", "targetHandle": "text" },
+    { "id": "e-brand-llm4", "source": "prompt-brand", "target": "llm-post-4", "sourceHandle": "text", "targetHandle": "text" },
+    { "id": "e-llm1-img1", "source": "llm-post-1", "target": "img-post-1", "sourceHandle": "text", "targetHandle": "text" },
+    { "id": "e-llm2-img2", "source": "llm-post-2", "target": "img-post-2", "sourceHandle": "text", "targetHandle": "text" },
+    { "id": "e-llm3-img3", "source": "llm-post-3", "target": "img-post-3", "sourceHandle": "text", "targetHandle": "text" },
+    { "id": "e-llm4-img4", "source": "llm-post-4", "target": "img-post-4", "sourceHandle": "text", "targetHandle": "text" },
+    { "id": "e-img1-gallery", "source": "img-post-1", "target": "gallery-output", "sourceHandle": "image", "targetHandle": "image" },
+    { "id": "e-img2-gallery", "source": "img-post-2", "target": "gallery-output", "sourceHandle": "image", "targetHandle": "image" },
+    { "id": "e-img3-gallery", "source": "img-post-3", "target": "gallery-output", "sourceHandle": "image", "targetHandle": "image" },
+    { "id": "e-img4-gallery", "source": "img-post-4", "target": "gallery-output", "sourceHandle": "image", "targetHandle": "image" }
+  ]
+}
