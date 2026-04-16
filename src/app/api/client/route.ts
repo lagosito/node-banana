@@ -1,20 +1,12 @@
 /**
  * El Kiosk - Client Brand DNA API Route
- *
- * Reads client data from Airtable and returns Brand DNA
- * for injecting into Node Banana workflow templates.
- *
- * GET /api/client?name=ClientName
- * GET /api/client  (returns all clients list)
  */
-
 import { NextRequest, NextResponse } from "next/server";
 
 const AIRTABLE_BASE_ID = "appuXgF7lJxG52Tqd";
 const AIRTABLE_CLIENTS_TABLE = "tblZ0fnEbWD6zwqR0";
 const AIRTABLE_BRAND_DNA_TABLE = "tbl1OX9uas15XkE5F";
 
-// Field IDs from Airtable schema
 const CLIENT_FIELDS = {
   clientName: "fld3CMtzrLHzyh4o7",
   firstName: "fldpzUpWe1fPZcAsl",
@@ -44,27 +36,11 @@ const BRAND_DNA_FIELDS = {
 };
 
 export interface ClientBrandDNA {
-  clientName: string;
-  firstName: string;
-  email: string;
-  website: string;
-  status: string;
-  brandLogoUrl: string;
-  customizations: string;
-  // Brand DNA
-  logo: string;
-  primaryColor: string;
-  secondaryColor: string;
-  accentColor: string;
-  darkColor: string;
-  lightColor: string;
-  displayFont: string;
-  bodyFont: string;
-  tagline: string;
-  toneTags: string;
-  aestheticTags: string;
-  dos: string;
-  donts: string;
+  clientName: string; firstName: string; email: string; website: string;
+  status: string; brandLogoUrl: string; customizations: string;
+  logo: string; primaryColor: string; secondaryColor: string; accentColor: string;
+  darkColor: string; lightColor: string; displayFont: string; bodyFont: string;
+  tagline: string; toneTags: string; aestheticTags: string; dos: string; donts: string;
 }
 
 async function airtableFetch(url: string) {
@@ -73,11 +49,29 @@ async function airtableFetch(url: string) {
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
   });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Airtable error ${res.status}: ${err}`);
-  }
+  if (!res.ok) { const err = await res.text(); throw new Error(`Airtable error ${res.status}: ${err}`); }
   return res.json();
+}
+
+async function fetchAllClients() {
+  const records: AirtableRecord[] = [];
+  let offset: string | undefined;
+  do {
+    const params = new URLSearchParams({
+      "fields[]": CLIENT_FIELDS.clientName,
+      "sort[0][field]": CLIENT_FIELDS.clientName,
+      "sort[0][direction]": "asc",
+      pageSize: "100",
+    });
+    params.append("fields[]", CLIENT_FIELDS.firstName);
+    params.append("fields[]", CLIENT_FIELDS.status);
+    if (offset) params.append("offset", offset);
+    const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_CLIENTS_TABLE}?${params}`;
+    const data = await airtableFetch(url);
+    records.push(...(data.records || []));
+    offset = data.offset;
+  } while (offset);
+  return records;
 }
 
 export async function GET(request: NextRequest) {
@@ -86,20 +80,15 @@ export async function GET(request: NextRequest) {
 
   try {
     if (!clientName) {
-      // Use field name in formula (not ID) - Airtable requires name in {} formulas
-      const formula = encodeURIComponent('NOT({Client Name}="")');
-      const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_CLIENTS_TABLE}?fields[]=${CLIENT_FIELDS.clientName}&fields[]=${CLIENT_FIELDS.firstName}&fields[]=${CLIENT_FIELDS.status}&sort[0][field]=Client Name&sort[0][direction]=asc&filterByFormula=${formula}`;
-      const data = await airtableFetch(url);
-
-      const clients = data.records
+      const records = await fetchAllClients();
+      const clients = records
         .map((r: AirtableRecord) => ({
           id: r.id,
           clientName: r.fields[CLIENT_FIELDS.clientName] || "",
           firstName: r.fields[CLIENT_FIELDS.firstName] || "",
           status: r.fields[CLIENT_FIELDS.status] || "",
         }))
-        .filter((c: { clientName: string }) => c.clientName.trim() !== "");
-
+        .filter((c) => c.clientName.trim() !== "");
       return NextResponse.json({ clients });
     }
 
@@ -111,14 +100,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Client not found" }, { status: 404 });
     }
 
-    const clientRecord = clientData.records[0];
-    const cf = clientRecord.fields;
-
+    const cf = clientData.records[0].fields;
     const brandUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_BRAND_DNA_TABLE}?filterByFormula=LOWER({Client Name})=LOWER("${encodedName}")`;
     const brandData = await airtableFetch(brandUrl);
-
-    const brandRecord = brandData.records?.[0];
-    const bf = brandRecord?.fields || {};
+    const bf = brandData.records?.[0]?.fields || {};
 
     const result: ClientBrandDNA = {
       clientName: cf[CLIENT_FIELDS.clientName] || "",
