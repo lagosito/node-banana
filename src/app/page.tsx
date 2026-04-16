@@ -1,12 +1,19 @@
 "use client";
 
 import { useEffect } from "react";
+import dynamic from "next/dynamic";
 import { ReactFlowProvider } from "@xyflow/react";
 import { Header } from "@/components/Header";
 import { WorkflowCanvas } from "@/components/WorkflowCanvas";
 import { FloatingActionBar } from "@/components/FloatingActionBar";
-import { AnnotationModal } from "@/components/AnnotationModal";
 import { useWorkflowStore } from "@/store/workflowStore";
+
+// Konva (react-konva) accesses document.createElement at import time,
+// which crashes during SSR. Load it only on the client.
+const AnnotationModal = dynamic(
+  () => import("@/components/AnnotationModal").then((m) => m.AnnotationModal),
+  { ssr: false }
+);
 
 export default function Home() {
   const initializeAutoSave = useWorkflowStore(
