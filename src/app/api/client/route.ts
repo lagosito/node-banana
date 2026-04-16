@@ -12,7 +12,6 @@ import { NextRequest, NextResponse } from "next/server";
 
 const AIRTABLE_BASE_ID = "appuXgF7lJxG52Tqd";
 const AIRTABLE_CLIENTS_TABLE = "tblZ0fnEbWD6zwqR0";
-const AIRTABLE_CLIENTS_VIEW = "viwuHcm2cjn8sDncI";
 const AIRTABLE_BRAND_DNA_TABLE = "tbl1OX9uas15XkE5F";
 
 // Field IDs from Airtable schema
@@ -71,32 +70,25 @@ export interface ClientBrandDNA {
 async function airtableFetch(url: string) {
   const apiKey = process.env.AIRTABLE_API_KEY;
   if (!apiKey) throw new Error("AIRTABLE_API_KEY not configured");
-
   const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
   });
-
   if (!res.ok) {
     const err = await res.text();
     throw new Error(`Airtable error ${res.status}: ${err}`);
   }
-
   return res.json();
 }
 
-// GET /api/client — returns list of all active clients
-// GET /api/client?name=ClientName — returns full Brand DNA for a client
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const clientName = searchParams.get("name");
 
   try {
     if (!clientName) {
-      // Return list of all clients
-      const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_CLIENTS_TABLE}?view=${AIRTABLE_CLIENTS_VIEW}&fields[]=${CLIENT_FIELDS.clientName}&fields[]=${CLIENT_FIELDS.firstName}&fields[]=${CLIENT_FIELDS.status}&sort[0][field]=${CLIENT_FIELDS.clientName}&sort[0][direction]=asc`;
+      // Use field name in formula (not ID) - Airtable requires name in {} formulas
+      const formula = encodeURIComponent('NOT({Client Name}="")');
+      const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_CLIENTS_TABLE}?fields[]=${CLIENT_FIELDS.clientName}&fields[]=${CLIENT_FIELDS.firstName}&fields[]=${CLIENT_FIELDS.status}&sort[0][field]=Client Name&sort[0][direction]=asc&filterByFormula=${formula}`;
       const data = await airtableFetch(url);
 
       const clients = data.records
@@ -111,9 +103,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ clients });
     }
 
-    // Fetch specific client
     const encodedName = encodeURIComponent(clientName);
-    const clientUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_CLIENTS_TABLE}?filterByFormula=LOWER({${CLIENT_FIELDS.clientName}})=LOWER("${encodedName}")`;
+    const clientUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_CLIENTS_TABLE}?filterByFormula=LOWER({Client Name})=LOWER("${encodedName}")`;
     const clientData = await airtableFetch(clientUrl);
 
     if (!clientData.records || clientData.records.length === 0) {
@@ -123,15 +114,13 @@ export async function GET(request: NextRequest) {
     const clientRecord = clientData.records[0];
     const cf = clientRecord.fields;
 
-    // Fetch Brand DNA
-    const brandUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_BRAND_DNA_TABLE}?filterByFormula=LOWER({${BRAND_DNA_FIELDS.clientName}})=LOWER("${encodedName}")`;
+    const brandUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_BRAND_DNA_TABLE}?filterByFormula=LOWER({Client Name})=LOWER("${encodedName}")`;
     const brandData = await airtableFetch(brandUrl);
 
     const brandRecord = brandData.records?.[0];
     const bf = brandRecord?.fields || {};
 
     const result: ClientBrandDNA = {
-      // Client fields
       clientName: cf[CLIENT_FIELDS.clientName] || "",
       firstName: cf[CLIENT_FIELDS.firstName] || "",
       email: cf[CLIENT_FIELDS.email] || "",
@@ -139,7 +128,6 @@ export async function GET(request: NextRequest) {
       status: cf[CLIENT_FIELDS.status] || "",
       brandLogoUrl: cf[CLIENT_FIELDS.brandLogoUrl] || "",
       customizations: cf[CLIENT_FIELDS.customizations] || "",
-      // Brand DNA fields
       logo: bf[BRAND_DNA_FIELDS.logo] || "",
       primaryColor: bf[BRAND_DNA_FIELDS.primaryColor] || "",
       secondaryColor: bf[BRAND_DNA_FIELDS.secondaryColor] || "",
@@ -162,5 +150,4 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface AirtableRecord { id: string; fields: Record<string, any>; }
