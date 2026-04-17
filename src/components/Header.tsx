@@ -8,6 +8,7 @@ import { CostIndicator } from "./CostIndicator";
 import { KeyboardShortcutsDialog } from "./KeyboardShortcutsDialog";
 import { WorkflowBrowserModal } from "./WorkflowBrowserModal";
 import { ClientLoader } from "./elkiosk/ClientLoader";
+import { useTheme } from "@/hooks/useTheme";
 
 function CommentsNavigationIcon() {
   const nodes = useWorkflowStore((state) => state.nodes);
@@ -50,6 +51,30 @@ function CommentsNavigationIcon() {
         <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] flex items-center justify-center text-[9px] font-bold text-white bg-blue-500 rounded-full px-0.5">
           {displayCount}
         </span>
+      )}
+    </button>
+  );
+}
+
+function ThemeToggleButton() {
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === "dark";
+  return (
+    <button
+      onClick={toggleTheme}
+      className="p-1.5 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800 rounded transition-colors"
+      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+    >
+      {isDark ? (
+        // Sun icon (shown in dark mode → click to go light)
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+        </svg>
+      ) : (
+        // Moon icon (shown in light mode → click to go dark)
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+        </svg>
       )}
     </button>
   );
@@ -139,7 +164,7 @@ export function Header() {
       if (!response.ok || !result.success) {
         alert(`Failed to open project folder: ${result.error || "Unknown error"}`);
       }
-    } catch (error) {
+    } catch {
       alert("Failed to open project folder. Please try again.");
     }
   };
@@ -163,6 +188,7 @@ export function Header() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       </button>
+      <ThemeToggleButton />
     </div>
   );
 
@@ -189,9 +215,8 @@ export function Header() {
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             title="Open welcome screen"
           >
-            <img src="/banana_icon.png" alt="Banana" className="w-6 h-6" />
             <h1 className="text-2xl font-semibold text-neutral-100 tracking-tight">
-              Node Banana
+              El Kiosk
             </h1>
           </button>
 
@@ -221,7 +246,7 @@ export function Header() {
                     )}
                   </button>
                   {saveDirectoryPath && (
-                    <button onClick={handleOpenDirectory} className="p-1.5 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800 rounded transition-colors" title="Open Project Folder">
+                    <button onClick={handleOpenDirectory} className="p-1.5 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800 rounded transition-colors" title="Open project folder">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
                       </svg>
@@ -273,10 +298,6 @@ export function Header() {
               isSaving ? "Saving..." : lastSavedAt ? `Saved ${formatTime(lastSavedAt)}` : "Not saved"
             ) : "Not saved"}
           </span>
-          <span className="text-neutral-500">·</span>
-          <a href="https://x.com/ReflctWillie" target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-neutral-200 transition-colors">
-            Made by Willie
-          </a>
           <span className="text-neutral-500">·</span>
           <button onClick={() => setShortcutsDialogOpen(true)} className="text-neutral-400 hover:text-neutral-200 transition-colors" title="Keyboard shortcuts (?)">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
