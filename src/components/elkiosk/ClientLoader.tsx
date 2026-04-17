@@ -175,13 +175,13 @@ export function ClientLoader() {
         className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-yellow-400 hover:bg-yellow-300 text-black transition-colors"
         title="El Kiosk — Load client or workflow"
       >
-        🍌 {currentClient ? currentClient.clientName : "Load Client"}
+        {currentClient ? currentClient.clientName : "Load Client"}
       </button>
 
       {isOpen && (
         <div className="absolute top-full left-0 mt-2 z-50 w-80 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-white">🍌 El Kiosk</h3>
+            <h3 className="text-sm font-semibold text-white">El Kiosk</h3>
             <button onClick={() => setIsOpen(false)} className="text-zinc-400 hover:text-white text-lg leading-none">×</button>
           </div>
 
@@ -190,7 +190,7 @@ export function ClientLoader() {
               onClick={() => setTab("client")}
               className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${tab === "client" ? "bg-yellow-400 text-black" : "text-zinc-400 hover:text-white"}`}
             >
-              👤 Cliente
+              👤 Client
             </button>
             <button
               onClick={() => setTab("workflow")}
@@ -207,16 +207,16 @@ export function ClientLoader() {
               )}
 
               <div className="mb-3">
-                <label className="block text-xs text-zinc-400 mb-1">Cliente</label>
+                <label className="block text-xs text-zinc-400 mb-1">Client</label>
                 {loadingClients ? (
-                  <div className="text-xs text-zinc-500">Cargando clientes…</div>
+                  <div className="text-xs text-zinc-500">Loading clients…</div>
                 ) : (
                   <select
                     value={selectedName}
                     onChange={(e) => setSelectedName(e.target.value)}
                     className="w-full bg-zinc-800 border border-zinc-600 rounded-md px-2 py-1.5 text-sm text-white focus:outline-none focus:border-yellow-400"
                   >
-                    <option value="">— Seleccionar cliente —</option>
+                    <option value="">— Select client —</option>
                     {clients.map((c) => (
                       <option key={c.id} value={c.clientName}>
                         {c.clientName}{c.status ? ` (${c.status})` : ""}
@@ -245,13 +245,13 @@ export function ClientLoader() {
                   disabled={!selectedName || loadingClient}
                   className="flex-1 py-2 rounded-md text-sm font-medium bg-yellow-400 hover:bg-yellow-300 text-black disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
-                  {loadingClient ? "Cargando…" : "Cargar Workflow + Brand"}
+                  {loadingClient ? "Loading…" : "Load Workflow + Brand"}
                 </button>
                 <button
                   onClick={handleInjectOnly}
                   disabled={!selectedName || loadingClient}
                   className="px-3 py-2 rounded-md text-sm bg-zinc-700 hover:bg-zinc-600 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  title="Inyectar Brand DNA sin cambiar el workflow actual"
+                  title="Inject Brand DNA without changing the current workflow"
                 >
                   DNA only
                 </button>
@@ -282,7 +282,7 @@ export function ClientLoader() {
                 <div className="mb-3 p-2 bg-red-900/50 border border-red-700 rounded text-xs text-red-300">{workflowError}</div>
               )}
               <p className="text-xs text-zinc-400 mb-3">
-                Carga un workflow base sin cliente. Podés inyectar el Brand DNA después desde la pestaña Cliente.
+                Load a base workflow without a client. You can inject the Brand DNA later from the Client tab.
               </p>
               <div className="mb-4">
                 <label className="block text-xs text-zinc-400 mb-1">Template</label>
@@ -301,7 +301,7 @@ export function ClientLoader() {
                 disabled={loadingWorkflow}
                 className="w-full py-2 rounded-md text-sm font-medium bg-yellow-400 hover:bg-yellow-300 text-black disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                {loadingWorkflow ? "Cargando…" : "Cargar Workflow"}
+                {loadingWorkflow ? "Loading…" : "Load Workflow"}
               </button>
             </div>
           )}
